@@ -1,0 +1,19 @@
+[package]
+name = "recipie-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.3.1"
+reqwest = { version = "0.11.17", features = ["json"] }
+serde = { version = "1.0.16", features = ["derive"] }
+serde_json = "1.0.96"
+tokio = { version = "1.28.0", features = ["full"] }
+async-trait = "0.1.68"
+actix-cors = "0.6.4"
+diesel = { version = "2.1.0", features = ["postgres", "r2d2", "chrono", "uuid"] }
+dotenvy = "0.15"
+dotenv = "0.15.0"
+chrono = "0.4.28"
