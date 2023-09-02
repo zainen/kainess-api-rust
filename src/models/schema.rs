@@ -1,7 +1,17 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    recipe_ingredients (id) {
+    recipe (id) {
+        id -> Int4,
+        #[max_length = 255]
+        name -> Varchar,
+        description -> Nullable<Text>,
+        hidden -> Nullable<Bool>,
+    }
+}
+
+diesel::table! {
+    recipe_ingredient (id) {
         id -> Int4,
         recipe_id -> Int4,
         #[max_length = 20]
@@ -14,7 +24,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    recipe_steps (id) {
+    recipe_step (id) {
         id -> Int4,
         recipe_id -> Int4,
         step_number -> Int4,
@@ -22,20 +32,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    recipes (id) {
-        id -> Int4,
-        #[max_length = 255]
-        name -> Nullable<Varchar>,
-        description -> Nullable<Text>,
-    }
-}
+diesel::joinable!(recipe_ingredient -> recipe (recipe_id));
+diesel::joinable!(recipe_step -> recipe (recipe_id));
 
-diesel::joinable!(recipe_ingredients -> recipes (recipe_id));
-diesel::joinable!(recipe_steps -> recipes (recipe_id));
-
-diesel::allow_tables_to_appear_in_same_query!(
-    recipe_ingredients,
-    recipe_steps,
-    recipes,
-);
+diesel::allow_tables_to_appear_in_same_query!(recipe, recipe_ingredient, recipe_step,);

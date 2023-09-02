@@ -1,26 +1,35 @@
 use actix_cors::Cors;
-use actix_web::{http::header, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, http::header, web, App, HttpResponse, HttpServer, Responder, Result};
+use serde::Serialize;
 
-// use serde::{Deserialize, Serialize};
-
-// use reqwest::Client as HttpClient;
-
-// use async_trait::async_trait;s
-
-// mod error_handler;
-// mod recipie;
-mod models;
+mod api;
 mod db;
+mod models;
 
-async fn hello() -> impl Responder {
-  HttpResponse::Ok().body("HELLO")
+#[derive(Serialize)]
+pub struct Response {
+  pub message: String,
+}
+
+#[get("/health")]
+async fn healthcheck() -> impl Responder {
+  let response = Response {
+    message: "Everything is fine".to_string(),
+  };
+  HttpResponse::Ok().json(response)
+}
+
+async fn not_found() -> Result<HttpResponse> {
+  let response = Response {
+    message: "Resource not found".to_string(),
+  };
+  Ok(HttpResponse::NotFound().json(response))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-  // use self::db::schema::recipie::dsl::*;
-
-  // let connection = &mut establish_connection();
+  let db = db::database::Database::new();
+  let app_data = web::Data::new(db);
 
   HttpServer::new(move || {
     App::new()
@@ -37,8 +46,11 @@ async fn main() -> std::io::Result<()> {
           // CHECK AGE
           .max_age(3600),
       )
-      .app_data(())
-      .route("/hello", web::get().to(hello))
+      .app_data(app_data.clone())
+      .configure(api::api::config)
+      .service(healthcheck)
+      .default_service(web::route().to(not_found))
+      .wrap(actix_web::middleware::Logger::default())
   })
   .bind("127.0.0.1:8080")?
   .run()
