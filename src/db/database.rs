@@ -76,7 +76,7 @@ impl Database {
     for ingredient in ingredients {
       diesel::insert_into(recipe_ingredient)
         .values(NewIngredient {
-          recipe_id: new_id,
+          recipe_id: Some(new_id),
           ..ingredient
         })
         .execute(&mut self.pool.get().unwrap())
@@ -86,7 +86,7 @@ impl Database {
     for step in steps {
       diesel::insert_into(recipe_step)
         .values(NewStep {
-          recipe_id: new_id,
+          recipe_id: Some(new_id),
           ..step
         })
         .execute(&mut self.pool.get().unwrap())

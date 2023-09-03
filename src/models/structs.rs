@@ -56,7 +56,7 @@ pub struct RecipeStep {
   pub step_directions: String,
 }
 
-#[derive(Insertable, AsChangeset)]
+#[derive(Insertable, Serialize, Deserialize, AsChangeset)]
 #[diesel(table_name = crate::models::schema::recipe)]
 pub struct NewRecipe {
   pub name: String,
@@ -64,20 +64,27 @@ pub struct NewRecipe {
   pub hidden: Option<bool>,
 }
 
-#[derive(Insertable, AsChangeset)]
+#[derive(Insertable, Serialize, Deserialize, AsChangeset)]
 #[diesel(table_name = crate::models::schema::recipe_ingredient)]
 pub struct NewIngredient {
-  pub recipe_id: i32,
+  pub recipe_id: Option<i32>,
   pub name: String,
   pub quantity: Option<String>,
   pub measurement_type: Option<String>,
 }
-#[derive(Insertable, AsChangeset)]
+#[derive(Insertable, Serialize, Deserialize, AsChangeset)]
 #[diesel(table_name = crate::models::schema::recipe_step)]
 pub struct NewStep {
-  pub recipe_id: i32,
+  pub recipe_id: Option<i32>,
   pub step_number: i32,
   pub step_directions: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct CreateRecipe {
+  pub recipe: NewRecipe,
+  pub ingredients: Vec<NewIngredient>,
+  pub steps: Vec<NewStep>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
