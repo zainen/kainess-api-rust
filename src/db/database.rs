@@ -42,7 +42,7 @@ impl Database {
     let found_recipe = recipe
       .filter(id_of_recipe.eq(target_id))
       .load::<Recipe>(&mut self.pool.get().unwrap())
-      .unwrap();
+      .unwrap().pop();
 
     let found_ingredients = recipe_ingredient
       .filter(ingredient_recipe_id.eq(target_id))

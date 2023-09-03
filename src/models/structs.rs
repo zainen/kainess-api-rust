@@ -82,7 +82,15 @@ pub struct NewStep {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RecipeWithDetails {
-  pub recipe: Vec<Recipe>,
+  pub recipe: Option<Recipe>,
   pub ingredients: Vec<RecipeIngredient>,
   pub steps: Vec<RecipeStep>,
+}
+
+
+
+// helper structs
+#[derive(Serialize)]
+pub struct Response {
+  pub message: String,
 }

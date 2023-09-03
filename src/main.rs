@@ -1,15 +1,10 @@
 use actix_cors::Cors;
 use actix_web::{get, http::header, web, App, HttpResponse, HttpServer, Responder, Result};
-use serde::Serialize;
+use models::structs::Response;
 
 mod api;
 mod db;
 mod models;
-
-#[derive(Serialize)]
-pub struct Response {
-  pub message: String,
-}
 
 #[get("/health")]
 async fn healthcheck() -> impl Responder {
