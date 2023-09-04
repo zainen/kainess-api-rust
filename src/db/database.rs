@@ -42,7 +42,8 @@ impl Database {
     let found_recipe = recipe
       .filter(id_of_recipe.eq(target_id))
       .load::<Recipe>(&mut self.pool.get().unwrap())
-      .unwrap().pop();
+      .unwrap()
+      .pop();
 
     let found_ingredients = recipe_ingredient
       .filter(ingredient_recipe_id.eq(target_id))
@@ -71,7 +72,6 @@ impl Database {
       .values(new_recipe)
       .get_result::<Recipe>(&mut self.pool.get().unwrap());
 
-    dbg!(&inserted_row);
     let new_id = inserted_row.unwrap().id;
     for ingredient in ingredients {
       diesel::insert_into(recipe_ingredient)

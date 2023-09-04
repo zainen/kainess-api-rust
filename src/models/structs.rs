@@ -84,7 +84,7 @@ pub struct NewStep {
 pub struct CreateRecipe {
   pub recipe: NewRecipe,
   pub ingredients: Vec<NewIngredient>,
-  pub steps: Vec<NewStep>
+  pub steps: Vec<NewStep>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -94,9 +94,30 @@ pub struct RecipeWithDetails {
   pub steps: Vec<RecipeStep>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UpdateRecipeWithDetails {
+  pub recipe: Option<Recipe>,
+}
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UpdateSuccessRecipe {
+  pub success: bool,
+  pub recipe: Recipe,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UpdateSuccessIngredient {
+  pub success: bool,
+  pub ingredient: RecipeIngredient,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct UpdateSuccessStep {
+  pub success: bool,
+  pub step: RecipeStep,
+}
 
 // helper structs
+
 #[derive(Serialize)]
 pub struct Response {
   pub message: String,
