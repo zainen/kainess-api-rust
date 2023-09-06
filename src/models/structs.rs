@@ -1,4 +1,4 @@
-use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable};
+use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable, deserialize};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -66,7 +66,7 @@ pub struct NewRecipe {
 
 #[derive(Insertable, Serialize, Deserialize, AsChangeset)]
 #[diesel(table_name = crate::models::schema::recipe_ingredient)]
-pub struct NewIngredient {
+pub struct NewRecipeIngredient {
   pub recipe_id: Option<i32>,
   pub name: String,
   pub quantity: Option<String>,
@@ -74,7 +74,7 @@ pub struct NewIngredient {
 }
 #[derive(Insertable, Serialize, Deserialize, AsChangeset)]
 #[diesel(table_name = crate::models::schema::recipe_step)]
-pub struct NewStep {
+pub struct NewRecipeStep {
   pub recipe_id: Option<i32>,
   pub step_number: i32,
   pub step_directions: String,
@@ -83,8 +83,8 @@ pub struct NewStep {
 #[derive(Deserialize, Serialize)]
 pub struct CreateRecipe {
   pub recipe: NewRecipe,
-  pub ingredients: Vec<NewIngredient>,
-  pub steps: Vec<NewStep>,
+  pub ingredients: Vec<NewRecipeIngredient>,
+  pub steps: Vec<NewRecipeStep>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -106,14 +106,19 @@ pub struct UpdateSuccessRecipe {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct UpdateSuccessIngredient {
+pub struct UpdateSuccessRecipeIngredient {
   pub success: bool,
   pub ingredient: RecipeIngredient,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct UpdateSuccessStep {
+pub struct UpdateSuccessRecipeStep {
   pub success: bool,
-  pub step: RecipeStep,
+  pub recipe_step: RecipeStep,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GeneralDbQuerySuccess {
+  pub success: bool
 }
 
 // helper structs

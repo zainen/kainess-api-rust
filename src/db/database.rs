@@ -3,14 +3,14 @@ use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
 use std::fmt::Error;
 
-use crate::models::schema::recipe::dsl::{id as id_of_recipe, recipe};
+use crate::models::{schema::recipe::dsl::{id as id_of_recipe, recipe}, structs::GeneralDbQuerySuccess};
 use crate::models::schema::recipe_ingredient::dsl::{
   recipe_id as ingredient_recipe_id, recipe_ingredient,
 };
 use crate::models::schema::recipe_step::dsl::{recipe_id as step_recipe_id, recipe_step};
 use crate::models::{
   structs::{
-    NewIngredient, NewRecipe, NewStep, Recipe, RecipeIngredient, RecipeStep, RecipeWithDetails,
+    NewRecipeIngredient, NewRecipe, NewRecipeStep, Recipe, RecipeIngredient, RecipeStep, RecipeWithDetails,
   },
   types::GetAllRecipes,
 };
@@ -65,8 +65,8 @@ impl Database {
   pub fn create_recipe(
     &self,
     new_recipe: NewRecipe,
-    ingredients: Vec<NewIngredient>,
-    steps: Vec<NewStep>,
+    ingredients: Vec<NewRecipeIngredient>,
+    steps: Vec<NewRecipeStep>,
   ) -> Result<(), Error> {
     let inserted_row: Result<Recipe, diesel::result::Error> = diesel::insert_into(recipe)
       .values(new_recipe)
@@ -75,7 +75,7 @@ impl Database {
     let new_id = inserted_row.unwrap().id;
     for ingredient in ingredients {
       diesel::insert_into(recipe_ingredient)
-        .values(NewIngredient {
+        .values(NewRecipeIngredient {
           recipe_id: Some(new_id),
           ..ingredient
         })
@@ -85,7 +85,7 @@ impl Database {
 
     for step in steps {
       diesel::insert_into(recipe_step)
-        .values(NewStep {
+        .values(NewRecipeStep {
           recipe_id: Some(new_id),
           ..step
         })
@@ -117,5 +117,12 @@ impl Database {
       .get_result::<RecipeStep>(&mut self.pool.get().unwrap())
       .expect(format!("Error updating step by id: {}", target_step.id).as_str());
     Some(updated_step)
+  }
+
+  pub fn delete_recipe(&self, target_recipe: Recipe) -> GeneralDbQuerySuccess {
+    diesel::delete(recipe.find(target_recipe.id))
+      .execute(&mut self.pool.get().unwrap())
+      .expect("Failed to delete the recipe");
+    GeneralDbQuerySuccess { success: true }
   }
 }
