@@ -1,4 +1,6 @@
-use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable, deserialize};
+use diesel::{
+  deserialize, prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -118,7 +120,7 @@ pub struct UpdateSuccessRecipeStep {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GeneralDbQuerySuccess {
-  pub success: bool
+  pub success: bool,
 }
 
 // helper structs

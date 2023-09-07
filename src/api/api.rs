@@ -1,6 +1,9 @@
 use actix_web::web;
 
-use super::routes::recipe::{create_recipe, get_recipe_details, get_recipes, update_recipe, delete_recipe};
+use super::routes::recipe::{
+  create_recipe, delete_recipe, delete_recipe_ingredient, delete_recipe_step, get_recipe_details,
+  get_recipes, update_recipe,
+};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
   cfg.service(
@@ -10,5 +13,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
       .service(create_recipe)
       .service(update_recipe)
       .service(delete_recipe)
+      .service(delete_recipe_ingredient)
+      .service(delete_recipe_step),
   );
 }

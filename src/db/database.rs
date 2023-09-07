@@ -3,14 +3,18 @@ use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
 use std::fmt::Error;
 
-use crate::models::{schema::recipe::dsl::{id as id_of_recipe, recipe}, structs::GeneralDbQuerySuccess};
 use crate::models::schema::recipe_ingredient::dsl::{
   recipe_id as ingredient_recipe_id, recipe_ingredient,
 };
 use crate::models::schema::recipe_step::dsl::{recipe_id as step_recipe_id, recipe_step};
 use crate::models::{
+  schema::recipe::dsl::{id as id_of_recipe, recipe},
+  structs::GeneralDbQuerySuccess,
+};
+use crate::models::{
   structs::{
-    NewRecipeIngredient, NewRecipe, NewRecipeStep, Recipe, RecipeIngredient, RecipeStep, RecipeWithDetails,
+    NewRecipe, NewRecipeIngredient, NewRecipeStep, Recipe, RecipeIngredient, RecipeStep,
+    RecipeWithDetails,
   },
   types::GetAllRecipes,
 };
@@ -123,6 +127,22 @@ impl Database {
     diesel::delete(recipe.find(target_recipe.id))
       .execute(&mut self.pool.get().unwrap())
       .expect("Failed to delete the recipe");
+    GeneralDbQuerySuccess { success: true }
+  }
+
+  pub fn delete_recipe_ingredient(
+    &self,
+    target_ingredient: RecipeIngredient,
+  ) -> GeneralDbQuerySuccess {
+    diesel::delete(recipe_ingredient.find(target_ingredient.id))
+      .execute(&mut self.pool.get().unwrap())
+      .expect("Failed to delete the recipe ingredient");
+    GeneralDbQuerySuccess { success: true }
+  }
+  pub fn delete_recipe_step(&self, target_step: RecipeStep) -> GeneralDbQuerySuccess {
+    diesel::delete(recipe_step.find(target_step.id))
+      .execute(&mut self.pool.get().unwrap())
+      .expect("failed to delete the recipe step");
     GeneralDbQuerySuccess { success: true }
   }
 }

@@ -1,12 +1,17 @@
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
-use crate::models::structs::{UpdateSuccessRecipeStep, GeneralDbQuerySuccess};
-use crate::models::structs::{
-  CreateRecipe, RecipeWithDetails, Response, UpdateSuccessRecipeIngredient, UpdateSuccessRecipe,
+use crate::models::structs::{GeneralDbQuerySuccess, UpdateSuccessRecipeStep};
+use crate::models::{
+  schema::recipe_ingredient,
+  structs::{
+    CreateRecipe, RecipeWithDetails, Response, UpdateSuccessRecipe, UpdateSuccessRecipeIngredient,
+  },
 };
 use crate::{
   db::database::Database,
-  models::structs::{NewRecipeIngredient, NewRecipe, NewRecipeStep, Recipe, RecipeIngredient, RecipeStep},
+  models::structs::{
+    NewRecipe, NewRecipeIngredient, NewRecipeStep, Recipe, RecipeIngredient, RecipeStep,
+  },
 };
 
 #[get("/")]
@@ -125,24 +130,64 @@ pub async fn update_recipe_step(
 pub async fn delete_recipe(
   db: web::Data<Database>,
   id: web::Path<i32>,
-  recipe_json: web::Json<Recipe>
+  recipe_json: web::Json<Recipe>,
 ) -> impl Responder {
   let recipe_to_delete = recipe_json.into_inner();
   if recipe_to_delete.id != id.into_inner() {
     HttpResponse::NotAcceptable().json(Response {
-      message: "recipe id and id provided do not match".to_string()
+      message: "recipe id and id provided do not match".to_string(),
     })
   } else {
     let result = db.delete_recipe(recipe_to_delete);
     match result.success {
-      true => HttpResponse::Ok().json(GeneralDbQuerySuccess {
-        success: true,
-      }),
+      true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
       false => HttpResponse::NotModified().json(Response {
-        message: "Failed to delete the recipe".to_string()
-      })
+        message: "Failed to delete the recipe".to_string(),
+      }),
     }
   }
 }
 
+#[delete("/{id}/ingredient")]
+pub async fn delete_recipe_ingredient(
+  db: web::Data<Database>,
+  id: web::Path<i32>,
+  recipe_ingredient_json: web::Json<RecipeIngredient>,
+) -> impl Responder {
+  let recipe_ingredient = recipe_ingredient_json.into_inner();
+  if recipe_ingredient.recipe_id != id.into_inner() {
+    HttpResponse::NotAcceptable().json(Response {
+      message: "recipe id and id provided do not match".to_string(),
+    })
+  } else {
+    let result = db.delete_recipe_ingredient(recipe_ingredient);
+    match result.success {
+      true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
+      false => HttpResponse::NotModified().json(Response {
+        message: "Failed to delete the recipe".to_string(),
+      }),
+    }
+  }
+}
 
+#[delete("/{id}/step")]
+pub async fn delete_recipe_step(
+  db: web::Data<Database>,
+  id: web::Path<i32>,
+  recipe_step_json: web::Json<RecipeStep>,
+) -> impl Responder {
+  let recipe_step = recipe_step_json.into_inner();
+  if recipe_step.recipe_id != id.into_inner() {
+    HttpResponse::NotAcceptable().json(Response {
+      message: "recipe id and id provided do not match".to_string(),
+    })
+  } else {
+    let result = db.delete_recipe_step(recipe_step);
+    match result.success {
+      true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
+      false => HttpResponse::NotModified().json(Response {
+        message: "Failed to delete the recipe".to_string(),
+      }),
+    }
+  }
+}
