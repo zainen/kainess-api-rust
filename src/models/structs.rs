@@ -1,6 +1,4 @@
-use diesel::{
-  deserialize, prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable,
-};
+use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
 
 #[derive(
