@@ -6,11 +6,6 @@ use dotenv::dotenv;
 
 use crate::{db::database::Database, mailer::structs::{EmailReqs, EmailSendResult}};
 
-// pub trait SmtpMailer {
-//   fn new(user: String, password: String) -> Self;
-
-//   fn createMailer(&mut self, cres: Credentials) -> dyn Box<SmtpMailer>;
-// }
 #[post("/")]
 pub async fn handle_email(_db: web::Data<Database>, params_json: web::Json<EmailReqs>) -> impl Responder {
 dotenv().ok();
