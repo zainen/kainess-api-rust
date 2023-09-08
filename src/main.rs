@@ -5,6 +5,7 @@ use models::structs::Response;
 mod api;
 mod db;
 mod models;
+mod mailer;
 
 #[get("/health")]
 async fn healthcheck() -> impl Responder {
