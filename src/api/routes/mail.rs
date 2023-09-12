@@ -1,15 +1,18 @@
 use actix_web::{post, web, Responder, HttpResponse};
-use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
-use lettre::{Message, SmtpTransport, Transport};
+use lettre::{SmtpTransport, Transport};
 use dotenv::dotenv;
 
-use crate::{db::database::Database, mailer::structs::{EmailReqs, EmailSendResult}};
+use crate::{db::database::Database, mailer::{structs::{EmailReqs, EmailSendResult}, helper_functions::create_message}};
 
 #[post("/")]
 pub async fn handle_email(_db: web::Data<Database>, params_json: web::Json<EmailReqs>) -> impl Responder {
 dotenv().ok();
-let EmailReqs {sender, receiver, subject, body} = params_json.into_inner();
+let EmailReqs {sender, receiver, phone_number, body} = params_json.into_inner();
+let subject = match phone_number {
+  Some(pn) => format!("Kainess incoming inquiry with phone number {}", pn),
+  None => "Kainess incoming inquiry".to_string()
+};
 let email = create_message(&sender, &receiver, &subject, &body);
 
 let creds = Credentials::new(std::env::var("GMAIL_USER").expect("Missing email user"), std::env::var("GMAIL_PASS").expect("Missing email user password"));
@@ -34,17 +37,4 @@ match mailer.send(&email) {
       })
   }
 }
-}
-
-pub fn create_message(sender: &str, reciever: &str, subject: &str, body: &str) -> Message {
-  let email = Message::builder()
-    .from(sender.parse().unwrap())
-    .reply_to(sender.parse().unwrap())
-    .to(reciever.parse().unwrap())
-    .subject(subject)
-    .header(ContentType::TEXT_PLAIN)
-    .body(String::from(body))
-    .unwrap();
-
-  email
 }
