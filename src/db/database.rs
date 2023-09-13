@@ -6,7 +6,7 @@ use std::fmt::Error;
 use crate::models::schema::recipe_ingredient::dsl::{
   recipe_id as ingredient_recipe_id, recipe_ingredient,
 };
-use crate::models::schema::recipe_step::dsl::{recipe_id as step_recipe_id, recipe_step};
+use crate::models::schema::recipe_step::dsl::{recipe_id as step_recipe_id, id as step_id, recipe_step, step_number};
 use crate::models::{
   schema::recipe::dsl::{id as id_of_recipe, recipe},
   structs::GeneralDbQuerySuccess,
@@ -99,6 +99,38 @@ impl Database {
     Ok(())
   }
 
+  pub fn add_recipe_step (&self, new_step: NewRecipeStep, recipe_id: i32, new_ingredient_position: i32) -> Vec<RecipeStep> {
+    let mut all_steps: Vec<RecipeStep>  = recipe_step
+    .filter(step_recipe_id.eq(recipe_id))
+    .order(step_number.asc())
+    .load::<RecipeStep>(&mut self.pool.get().unwrap())
+    .unwrap();
+    let inserted_step = diesel::insert_into(recipe_step)
+    .values(NewRecipeStep {
+      recipe_id: Some(recipe_id),
+      ..new_step
+    })
+    .get_result::<RecipeStep>(&mut self.pool.get().unwrap())
+    .expect("failed to insert recipe step");
+    
+    // place new stop in right place
+    all_steps.insert(new_ingredient_position as usize, inserted_step);
+
+    for (i, step) in all_steps.iter().enumerate() {
+      diesel::update(recipe_step)
+        .filter(step_id.eq(step.id))
+        .set(step_number.eq(i as i32 + 1_i32))
+        .execute(&mut self.pool.get().unwrap())
+        .expect(&format!("failed to update step {:?}", step));
+    };
+
+    recipe_step
+    .filter(step_recipe_id.eq(recipe_id))
+    .order(step_number.asc())
+    .load::<RecipeStep>(&mut self.pool.get().unwrap())
+    .unwrap()
+  }
+
   pub fn update_recipe(&self, target_recipe: Recipe) -> Option<Recipe> {
     let updated_recipe = diesel::update(recipe.find(target_recipe.id))
       .set(&target_recipe)
@@ -143,6 +175,18 @@ impl Database {
     diesel::delete(recipe_step.find(target_step.id))
       .execute(&mut self.pool.get().unwrap())
       .expect("failed to delete the recipe step");
+    let found_steps: Vec<RecipeStep> = recipe_step
+      .filter(step_recipe_id.eq(target_step.recipe_id))
+      .order(step_number.asc())
+      .load::<RecipeStep>(&mut self.pool.get().unwrap())
+      .unwrap();
+    for (i, step) in found_steps.iter().enumerate() {
+      diesel::update(recipe_step)
+        .filter(step_id.eq(step.id))
+        .set(step_number.eq(i as i32))
+        .execute(&mut self.pool.get().unwrap())
+        .expect("failed to update step number");
+    }
     GeneralDbQuerySuccess { success: true }
   }
 }

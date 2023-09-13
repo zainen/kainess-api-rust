@@ -81,18 +81,18 @@ pub async fn update_recipe_base(
 #[put("/{recipe_id_path}/ingredient/{ingredient_id_path}")]
 pub async fn update_recipe_ingredient(
   db: web::Data<Database>,
-  recipe_id_path: web::Path<i32>,
-  ingredient_id_path: web::Path<i32>,
+  path_params: web::Path<(i32, i32)>,
   ingredient_json: web::Json<RecipeIngredient>,
 ) -> impl Responder {
+  let (recipe_id, ingredient_id) = path_params.into_inner();
   let ingredient: RecipeIngredient = ingredient_json.into_inner();
-  let ingredient_id_check = ingredient.id != ingredient_id_path.into_inner();
+  let ingredient_id_check = ingredient.id != ingredient_id;
   if ingredient_id_check {
     return HttpResponse::NotAcceptable().json(Response {
       message: "Ingridient id does not match path".to_string(),
     });
   }
-  if ingredient.recipe_id == recipe_id_path.into_inner() {
+  if ingredient.recipe_id == recipe_id {
     let result: Option<RecipeIngredient> = db.update_ingredient(ingredient);
     match result {
       Some(ingredient) => HttpResponse::Ok().json(UpdateSuccessRecipeIngredient {
@@ -113,18 +113,18 @@ pub async fn update_recipe_ingredient(
 #[put("/{recipe_id_path}/step/{step_id_path}")]
 pub async fn update_recipe_step(
   db: web::Data<Database>,
-  recipe_id_path: web::Path<i32>,
-  step_id_path: web::Path<i32>,
+  path_params: web::Path<(i32, i32)>,
   recipe_step_json: web::Json<RecipeStep>,
 ) -> impl Responder {
-  let recipe_step: RecipeStep = recipe_step_json.into_inner();
-  let step_id_check = recipe_step.id != step_id_path.into_inner();
+  let (recipe_id, step_id) = path_params.into_inner();
+  let recipe_step = recipe_step_json.into_inner();
+  let step_id_check = recipe_step.id != step_id;
   if step_id_check {
     return HttpResponse::NotAcceptable().json(Response {
       message: "Step id does not match path".to_string(),
     });
   }
-  if recipe_step.recipe_id == recipe_id_path.into_inner() {
+  if recipe_step.recipe_id == recipe_id {
     let result: Option<RecipeStep> = db.update_step(recipe_step);
     match result {
       Some(step) => HttpResponse::Ok().json(UpdateSuccessRecipeStep {
@@ -141,6 +141,21 @@ pub async fn update_recipe_step(
     })
   }
 }
+
+#[put("/{recipe_id_path}/insert_step/{step_number_to_add}")]
+pub async fn add_recipe_step (
+  db: web::Data<Database>,
+  path_params: web::Path<(i32, i32)>,
+  recipe_step_json: web::Json<NewRecipeStep>,
+) -> impl Responder {
+  let (recipe_id, step_number) = path_params.into_inner();
+  let recipe_step = recipe_step_json.into_inner();
+
+  let updated_ingredients = db.add_recipe_step(recipe_step, recipe_id, step_number - 1);
+  HttpResponse::Ok().json(updated_ingredients)
+}
+
+
 #[delete("/{recipe_id_path}")]
 pub async fn delete_recipe(
   db: web::Data<Database>,
@@ -166,18 +181,18 @@ pub async fn delete_recipe(
 #[delete("/{recipe_id_path}/ingredient/{ingredient_id_path}")]
 pub async fn delete_recipe_ingredient(
   db: web::Data<Database>,
-  recipe_id_path: web::Path<i32>,
-  ingredient_id_path: web::Path<i32>,
+  path_params: web::Path<(i32, i32)>,
   ingredient_json: web::Json<RecipeIngredient>,
 ) -> impl Responder {
+  let (recipe_id_path, ingredient_id_path) = path_params.into_inner();
   let ingredient = ingredient_json.into_inner();
-  let ingredient_id_check = ingredient_id_path.into_inner() != ingredient.id;
-  if ingredient_id_check {
+  let ingredient_id_check_failed = ingredient_id_path != ingredient.id;
+  if ingredient_id_check_failed {
     return HttpResponse::NotAcceptable().json(Response {
       message: "ingredient id does not match".to_string(),
     });
   }
-  if ingredient.recipe_id != recipe_id_path.into_inner() {
+  if ingredient.recipe_id != recipe_id_path {
     HttpResponse::NotAcceptable().json(Response {
       message: "recipe id and id provided do not match".to_string(),
     })
@@ -195,18 +210,18 @@ pub async fn delete_recipe_ingredient(
 #[delete("/{recipe_id_path}/step/{step_id_path}")]
 pub async fn delete_recipe_step(
   db: web::Data<Database>,
-  recipe_id_path: web::Path<i32>,
-  step_id_path: web::Path<i32>,
+  path_params: web::Path<(i32, i32)>,
   recipe_step_json: web::Json<RecipeStep>,
 ) -> impl Responder {
+  let (recipe_id, step_id) = path_params.into_inner();
   let recipe_step = recipe_step_json.into_inner();
-  let step_id_check = step_id_path.into_inner() != recipe_step.id;
+  let step_id_check = step_id != recipe_step.id;
   if step_id_check {
     return HttpResponse::NotAcceptable().json(Response {
       message: "step id does not match".to_string(),
     });
   }
-  if recipe_step.recipe_id != recipe_id_path.into_inner() {
+  if recipe_step.recipe_id != recipe_id {
     HttpResponse::NotAcceptable().json(Response {
       message: "recipe id and id provided do not match".to_string(),
     })
