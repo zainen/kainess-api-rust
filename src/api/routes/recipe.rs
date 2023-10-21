@@ -142,7 +142,7 @@ pub async fn update_recipe_step(
   }
 }
 
-#[put("/{recipe_id_path}/insert_step/{step_number_to_add}")]
+#[post("/{recipe_id_path}/step/{step_number_to_add}")]
 pub async fn add_recipe_step (
   db: web::Data<Database>,
   path_params: web::Path<(i32, i32)>,

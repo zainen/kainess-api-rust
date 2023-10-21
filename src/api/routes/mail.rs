@@ -8,9 +8,9 @@ use crate::{db::database::Database, mailer::{structs::{EmailReqs, EmailSendResul
 #[post("/")]
 pub async fn handle_email(_db: web::Data<Database>, params_json: web::Json<EmailReqs>) -> impl Responder {
 dotenv().ok();
-let EmailReqs {sender, receiver, phone_number, body} = params_json.into_inner();
+let EmailReqs {first_name, last_name, sender, receiver, phone_number, body} = params_json.into_inner();
 let subject = match phone_number {
-  Some(pn) => format!("Kainess incoming inquiry with phone number {}", pn),
+  Some(pn) => format!("Kainess incoming inquiry from {} {} with phone number {}", first_name, last_name, pn),
   None => "Kainess incoming inquiry".to_string()
 };
 let email = create_message(&sender, &receiver, &subject, &body);

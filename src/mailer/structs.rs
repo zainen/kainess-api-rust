@@ -5,6 +5,8 @@ use serde::{Serialize, Deserialize};
 pub struct EmailReqs {
   pub sender: String,
   pub receiver: String,
+  pub first_name: String,
+  pub last_name: String,
   pub phone_number: Option<String>,
   pub body: String
 } 
