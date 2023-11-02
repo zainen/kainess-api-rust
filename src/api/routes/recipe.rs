@@ -143,7 +143,7 @@ pub async fn update_recipe_step(
 }
 
 #[post("/{recipe_id_path}/step/{step_number_to_add}")]
-pub async fn add_recipe_step (
+pub async fn add_recipe_step(
   db: web::Data<Database>,
   path_params: web::Path<(i32, i32)>,
   recipe_step_json: web::Json<NewRecipeStep>,
@@ -154,7 +154,6 @@ pub async fn add_recipe_step (
   let updated_ingredients = db.add_recipe_step(recipe_step, recipe_id, step_number - 1);
   HttpResponse::Ok().json(updated_ingredients)
 }
-
 
 #[delete("/{recipe_id_path}")]
 pub async fn delete_recipe(

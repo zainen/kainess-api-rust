@@ -1,4 +1,4 @@
-use lettre::{Message, message::header::ContentType};
+use lettre::{message::header::ContentType, Message};
 
 pub fn create_message(sender: &str, reciever: &str, subject: &str, body: &str) -> Message {
   let email = Message::builder()

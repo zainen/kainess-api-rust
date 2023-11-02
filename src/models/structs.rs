@@ -4,10 +4,28 @@ use serde::{Deserialize, Serialize};
 #[derive(
   PartialEq, Serialize, Deserialize, Identifiable, Debug, Clone, Queryable, Selectable, AsChangeset,
 )]
+#[diesel(table_name = crate::models::schema::users)]
+pub struct User {
+  pub id: i32,
+  pub username: String,
+  pub password: String,
+}
+
+#[derive(Insertable, Serialize, Deserialize, AsChangeset)]
+#[diesel(table_name = crate::models::schema::users)]
+pub struct UserNoId {
+  pub username: String,
+  pub password: String,
+}
+
+#[derive(
+  PartialEq, Serialize, Deserialize, Identifiable, Debug, Clone, Queryable, Selectable, AsChangeset,
+)]
 #[diesel(table_name = crate::models::schema::recipe)]
 pub struct Recipe {
   #[diesel(sql_type = Integer)]
   pub id: i32,
+  pub user_id: i32,
   pub name: String,
   pub description: Option<String>,
   pub hidden: Option<bool>,
@@ -60,6 +78,7 @@ pub struct RecipeStep {
 #[diesel(table_name = crate::models::schema::recipe)]
 pub struct NewRecipe {
   pub name: String,
+  pub user_id: i32,
   pub description: Option<String>,
   pub hidden: Option<bool>,
 }

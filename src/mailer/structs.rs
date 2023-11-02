@@ -1,5 +1,4 @@
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EmailReqs {
@@ -8,8 +7,8 @@ pub struct EmailReqs {
   pub first_name: String,
   pub last_name: String,
   pub phone_number: Option<String>,
-  pub body: String
-} 
+  pub body: String,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EmailSendResult {

@@ -4,8 +4,8 @@ use models::structs::Response;
 
 mod api;
 mod db;
-mod models;
 mod mailer;
+mod models;
 
 #[get("/health")]
 async fn healthcheck() -> impl Responder {

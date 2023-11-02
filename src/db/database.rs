@@ -3,13 +3,22 @@ use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
 use std::fmt::Error;
 
-use crate::models::schema::recipe_ingredient::dsl::{
-  recipe_id as ingredient_recipe_id, recipe_ingredient,
+use bcrypt::{hash, verify};
+
+use crate::models::schema::recipe_step::dsl::{
+  id as step_id, recipe_id as step_recipe_id, recipe_step, step_number,
 };
-use crate::models::schema::recipe_step::dsl::{recipe_id as step_recipe_id, id as step_id, recipe_step, step_number};
 use crate::models::{
   schema::recipe::dsl::{id as id_of_recipe, recipe},
   structs::GeneralDbQuerySuccess,
+};
+use crate::models::{
+  schema::recipe_ingredient::dsl::{recipe_id as ingredient_recipe_id, recipe_ingredient},
+  structs::UserNoId,
+};
+use crate::models::{
+  schema::users::dsl::{username, users},
+  structs::User,
 };
 use crate::models::{
   structs::{
@@ -96,23 +105,29 @@ impl Database {
         .execute(&mut self.pool.get().unwrap())
         .expect("failed to insert recipe step");
     }
+    // TODO update return
     Ok(())
   }
 
-  pub fn add_recipe_step (&self, new_step: NewRecipeStep, recipe_id: i32, new_ingredient_position: i32) -> Vec<RecipeStep> {
-    let mut all_steps: Vec<RecipeStep>  = recipe_step
-    .filter(step_recipe_id.eq(recipe_id))
-    .order(step_number.asc())
-    .load::<RecipeStep>(&mut self.pool.get().unwrap())
-    .unwrap();
+  pub fn add_recipe_step(
+    &self,
+    new_step: NewRecipeStep,
+    recipe_id: i32,
+    new_ingredient_position: i32,
+  ) -> Vec<RecipeStep> {
+    let mut all_steps: Vec<RecipeStep> = recipe_step
+      .filter(step_recipe_id.eq(recipe_id))
+      .order(step_number.asc())
+      .load::<RecipeStep>(&mut self.pool.get().unwrap())
+      .unwrap();
     let inserted_step = diesel::insert_into(recipe_step)
-    .values(NewRecipeStep {
-      recipe_id: Some(recipe_id),
-      ..new_step
-    })
-    .get_result::<RecipeStep>(&mut self.pool.get().unwrap())
-    .expect("failed to insert recipe step");
-    
+      .values(NewRecipeStep {
+        recipe_id: Some(recipe_id),
+        ..new_step
+      })
+      .get_result::<RecipeStep>(&mut self.pool.get().unwrap())
+      .expect("failed to insert recipe step");
+
     // place new stop in right place
     all_steps.insert(new_ingredient_position as usize, inserted_step);
 
@@ -122,13 +137,13 @@ impl Database {
         .set(step_number.eq(i as i32 + 1_i32))
         .execute(&mut self.pool.get().unwrap())
         .expect(&format!("failed to update step {:?}", step));
-    };
+    }
 
     recipe_step
-    .filter(step_recipe_id.eq(recipe_id))
-    .order(step_number.asc())
-    .load::<RecipeStep>(&mut self.pool.get().unwrap())
-    .unwrap()
+      .filter(step_recipe_id.eq(recipe_id))
+      .order(step_number.asc())
+      .load::<RecipeStep>(&mut self.pool.get().unwrap())
+      .unwrap()
   }
 
   pub fn update_recipe(&self, target_recipe: Recipe) -> Option<Recipe> {
@@ -188,5 +203,31 @@ impl Database {
         .expect("failed to update step number");
     }
     GeneralDbQuerySuccess { success: true }
+  }
+
+  pub fn create_user(&self, user: UserNoId) -> Result<User, diesel::result::Error> {
+    println!("starting db insert");
+    dotenv().ok();
+    let hash = hash(user.password, 14).expect("FAILED TO HASH");
+
+    let new_user = UserNoId {
+      username: user.username,
+      password: hash,
+    };
+    diesel::insert_into(users)
+      .values(new_user)
+      .get_result::<User>(&mut self.pool.get().unwrap())
+  }
+
+  pub fn check_user(&self, creds: UserNoId) -> bool {
+    let found_user: Option<User> = users
+      .filter(username.eq(creds.username))
+      .load::<User>(&mut self.pool.get().unwrap())
+      .unwrap()
+      .pop();
+    match found_user {
+      Some(user) => verify(creds.password, &user.password).unwrap(),
+      None => false,
+    }
   }
 }
