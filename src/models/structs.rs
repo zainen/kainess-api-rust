@@ -7,14 +7,16 @@ use serde::{Deserialize, Serialize};
 #[diesel(table_name = crate::models::schema::users)]
 pub struct User {
   pub id: i32,
-  pub username: String,
+  pub email: String,
+  pub first_name: String,
+  pub last_name: String,
   pub password: String,
 }
 
 #[derive(Insertable, Serialize, Deserialize, AsChangeset)]
 #[diesel(table_name = crate::models::schema::users)]
-pub struct UserNoId {
-  pub username: String,
+pub struct UserValidationParams {
+  pub email: String,
   pub password: String,
 }
 

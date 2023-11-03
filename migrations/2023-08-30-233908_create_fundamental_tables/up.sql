@@ -2,12 +2,14 @@
 
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY NOT NULL,
-  username VARCHAR(255) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
   password VARCHAR(255) NOT NULL
 );
 
-INSERT INTO users (username, password) VALUES 
-('test', '$2b$12$0ZZyUOJL.3tASromWavwTOD/uH8Wj.mjf8C2QWJ4rpTMEJHpcLTHq');
+INSERT INTO users (email, first_name, last_name, password) VALUES 
+('fake.test@gmail.com', 'some', 'one', '$2b$12$0ZZyUOJL.3tASromWavwTOD/uH8Wj.mjf8C2QWJ4rpTMEJHpcLTHq');
 
 CREATE TABLE IF NOT EXISTS recipe (
   id  SERIAL PRIMARY KEY,

@@ -14,10 +14,10 @@ use crate::models::{
 };
 use crate::models::{
   schema::recipe_ingredient::dsl::{recipe_id as ingredient_recipe_id, recipe_ingredient},
-  structs::UserNoId,
+  structs::UserValidationParams,
 };
 use crate::models::{
-  schema::users::dsl::{username, users},
+  schema::users::dsl::{email, users},
   structs::User,
 };
 use crate::models::{
@@ -205,13 +205,13 @@ impl Database {
     GeneralDbQuerySuccess { success: true }
   }
 
-  pub fn create_user(&self, user: UserNoId) -> Result<User, diesel::result::Error> {
+  pub fn create_user(&self, user: UserValidationParams) -> Result<User, diesel::result::Error> {
     println!("starting db insert");
     dotenv().ok();
     let hash = hash(user.password, 14).expect("FAILED TO HASH");
 
-    let new_user = UserNoId {
-      username: user.username,
+    let new_user = UserValidationParams {
+      email: user.email,
       password: hash,
     };
     diesel::insert_into(users)
@@ -219,9 +219,9 @@ impl Database {
       .get_result::<User>(&mut self.pool.get().unwrap())
   }
 
-  pub fn check_user(&self, creds: UserNoId) -> bool {
+  pub fn check_user(&self, creds: UserValidationParams) -> bool {
     let found_user: Option<User> = users
-      .filter(username.eq(creds.username))
+      .filter(email.eq(creds.email))
       .load::<User>(&mut self.pool.get().unwrap())
       .unwrap()
       .pop();

@@ -3,15 +3,15 @@ use actix_web::{post, web, HttpResponse, Responder};
 
 use crate::{
   db::database::Database,
-  models::structs::{GeneralDbQuerySuccess, UserNoId},
+  models::structs::{GeneralDbQuerySuccess, UserValidationParams},
 };
 
 #[post("/")]
-pub async fn login(db: web::Data<Database>, params_json: web::Json<UserNoId>) -> impl Responder {
+pub async fn login(db: web::Data<Database>, params_json: web::Json<UserValidationParams>) -> impl Responder {
   let user_params = params_json.into_inner();
 
-  let creds = UserNoId {
-    username: user_params.username,
+  let creds = UserValidationParams {
+    email: user_params.email,
     password: user_params.password,
   };
   let res = db.check_user(creds);
@@ -21,7 +21,7 @@ pub async fn login(db: web::Data<Database>, params_json: web::Json<UserNoId>) ->
 #[post("/create-user")]
 pub async fn create_user(
   db: web::Data<Database>,
-  params_json: web::Json<UserNoId>,
+  params_json: web::Json<UserValidationParams>,
 ) -> impl Responder {
   let params = params_json.into_inner();
   println!("start user creation");
