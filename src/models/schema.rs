@@ -44,6 +44,7 @@ diesel::table! {
         last_name -> Varchar,
         #[max_length = 255]
         password -> Varchar,
+        is_admin -> Bool,
     }
 }
 

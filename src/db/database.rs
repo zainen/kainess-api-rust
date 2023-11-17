@@ -5,9 +5,9 @@ use std::fmt::Error;
 
 use bcrypt::{hash, verify};
 
-use crate::models::schema::recipe_step::dsl::{
+use crate::models::{schema::recipe_step::dsl::{
   id as step_id, recipe_id as step_recipe_id, recipe_step, step_number,
-};
+}, structs::{UserJwtInfo, Response}};
 use crate::models::{
   schema::recipe::dsl::{id as id_of_recipe, recipe},
   structs::GeneralDbQuerySuccess,
@@ -219,15 +219,32 @@ impl Database {
       .get_result::<User>(&mut self.pool.get().unwrap())
   }
 
-  pub fn check_user(&self, creds: UserValidationParams) -> bool {
+  pub fn check_user(&self, creds: UserValidationParams) -> Result<UserJwtInfo, Response> {
     let found_user: Option<User> = users
       .filter(email.eq(creds.email))
       .load::<User>(&mut self.pool.get().unwrap())
       .unwrap()
       .pop();
     match found_user {
-      Some(user) => verify(creds.password, &user.password).unwrap(),
-      None => false,
+      Some(user) => {
+        if verify(creds.password, &user.password).unwrap() {
+          let payload = UserJwtInfo {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            is_admin: user.is_admin
+          };
+          Ok(payload)
+        } else {
+          Err(Response {
+            message: "Failed to verify user".to_string()
+          })
+        }
+      },
+      None => Err(Response {
+        message: "Failed to verify user".to_string()
+      }),
     }
   }
 }

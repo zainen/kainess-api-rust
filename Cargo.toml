@@ -18,3 +18,4 @@ dotenv = "0.15.0"
 chrono = "0.4.28"
 lettre = { version = "0.10.4", features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "builder", "tokio1-native-tls"] }
 bcrypt = "0.15.0"
+jsonwebtoken = "9.1.0"
