@@ -17,7 +17,7 @@ use crate::models::{
   structs::UserValidationParams,
 };
 use crate::models::{
-  schema::users::dsl::{email, users},
+  schema::users::dsl::{email as email_column, users},
   structs::User,
 };
 use crate::models::{
@@ -205,28 +205,41 @@ impl Database {
     GeneralDbQuerySuccess { success: true }
   }
 
-  pub fn create_user(&self, user: UserValidationParams) -> Result<User, diesel::result::Error> {
+  pub fn create_user(&self, user: UserValidationParams) -> Result<UserJwtInfo, diesel::result::Error> {
     println!("starting db insert");
     dotenv().ok();
     let hash = hash(user.password, 14).expect("FAILED TO HASH");
+    let UserValidationParams {email, first_name, last_name, is_admin, ..} = user;
 
     let new_user = UserValidationParams {
-      email: user.email,
+      email,
+      first_name,
+      last_name,
       password: hash,
+      is_admin
     };
-    diesel::insert_into(users)
+    match diesel::insert_into(users)
       .values(new_user)
-      .get_result::<User>(&mut self.pool.get().unwrap())
+      .get_result::<User>(&mut self.pool.get().unwrap()) {
+        Ok(new_user) => {
+          let User { id, email, first_name, last_name, is_admin, ..} = new_user;
+          Ok(UserJwtInfo { id, email, first_name, last_name, is_admin })
+        },
+        Err(e) => Err(e)
+      }
+
+
   }
 
   pub fn check_user(&self, creds: UserValidationParams) -> Result<UserJwtInfo, Response> {
     let found_user: Option<User> = users
-      .filter(email.eq(creds.email))
+      .filter(email_column.eq(&creds.email))
       .load::<User>(&mut self.pool.get().unwrap())
       .unwrap()
       .pop();
     match found_user {
       Some(user) => {
+        let extend_user = user.clone();
         if verify(creds.password, &user.password).unwrap() {
           let payload = UserJwtInfo {
             id: user.id,
@@ -235,6 +248,9 @@ impl Database {
             last_name: user.last_name,
             is_admin: user.is_admin
           };
+          if creds.email != extend_user.email {
+            return Err(Response { message: "Email Error".to_string() })
+          }
           Ok(payload)
         } else {
           Err(Response {

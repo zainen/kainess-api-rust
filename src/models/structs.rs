@@ -28,7 +28,10 @@ pub struct UserJwtInfo {
 #[diesel(table_name = crate::models::schema::users)]
 pub struct UserValidationParams {
   pub email: String,
+  pub first_name: String,
+  pub last_name: String,
   pub password: String,
+  pub is_admin: Option<bool>
 }
 
 #[derive(
