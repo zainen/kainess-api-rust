@@ -11,7 +11,7 @@ pub struct User {
   pub first_name: String,
   pub last_name: String,
   pub password: String,
-  pub is_admin: bool
+  pub is_admin: bool,
 }
 
 #[derive(Serialize, Deserialize, Identifiable, Debug, AsChangeset)]
@@ -21,7 +21,7 @@ pub struct UserJwtInfo {
   pub email: String,
   pub first_name: String,
   pub last_name: String,
-  pub is_admin: bool
+  pub is_admin: bool,
 }
 
 #[derive(Insertable, Serialize, Deserialize, AsChangeset)]
@@ -31,7 +31,7 @@ pub struct UserValidationParams {
   pub first_name: String,
   pub last_name: String,
   pub password: String,
-  pub is_admin: Option<bool>
+  pub is_admin: Option<bool>,
 }
 
 #[derive(

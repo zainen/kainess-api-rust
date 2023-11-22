@@ -52,9 +52,4 @@ diesel::joinable!(recipe -> users (user_id));
 diesel::joinable!(recipe_ingredient -> recipe (recipe_id));
 diesel::joinable!(recipe_step -> recipe (recipe_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    recipe,
-    recipe_ingredient,
-    recipe_step,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(recipe, recipe_ingredient, recipe_step, users,);

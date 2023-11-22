@@ -5,9 +5,6 @@ use std::fmt::Error;
 
 use bcrypt::{hash, verify};
 
-use crate::models::{schema::recipe_step::dsl::{
-  id as step_id, recipe_id as step_recipe_id, recipe_step, step_number,
-}, structs::{UserJwtInfo, Response}};
 use crate::models::{
   schema::recipe::dsl::{id as id_of_recipe, recipe},
   structs::GeneralDbQuerySuccess,
@@ -15,6 +12,12 @@ use crate::models::{
 use crate::models::{
   schema::recipe_ingredient::dsl::{recipe_id as ingredient_recipe_id, recipe_ingredient},
   structs::UserValidationParams,
+};
+use crate::models::{
+  schema::recipe_step::dsl::{
+    id as step_id, recipe_id as step_recipe_id, recipe_step, step_number,
+  },
+  structs::{Response, UserJwtInfo},
 };
 use crate::models::{
   schema::users::dsl::{email as email_column, users},
@@ -205,30 +208,51 @@ impl Database {
     GeneralDbQuerySuccess { success: true }
   }
 
-  pub fn create_user(&self, user: UserValidationParams) -> Result<UserJwtInfo, diesel::result::Error> {
+  pub fn create_user(
+    &self,
+    user: UserValidationParams,
+  ) -> Result<UserJwtInfo, diesel::result::Error> {
     println!("starting db insert");
     dotenv().ok();
     let hash = hash(user.password, 14).expect("FAILED TO HASH");
-    let UserValidationParams {email, first_name, last_name, is_admin, ..} = user;
+    let UserValidationParams {
+      email,
+      first_name,
+      last_name,
+      is_admin,
+      ..
+    } = user;
 
     let new_user = UserValidationParams {
       email,
       first_name,
       last_name,
       password: hash,
-      is_admin
+      is_admin,
     };
     match diesel::insert_into(users)
       .values(new_user)
-      .get_result::<User>(&mut self.pool.get().unwrap()) {
-        Ok(new_user) => {
-          let User { id, email, first_name, last_name, is_admin, ..} = new_user;
-          Ok(UserJwtInfo { id, email, first_name, last_name, is_admin })
-        },
-        Err(e) => Err(e)
+      .get_result::<User>(&mut self.pool.get().unwrap())
+    {
+      Ok(new_user) => {
+        let User {
+          id,
+          email,
+          first_name,
+          last_name,
+          is_admin,
+          ..
+        } = new_user;
+        Ok(UserJwtInfo {
+          id,
+          email,
+          first_name,
+          last_name,
+          is_admin,
+        })
       }
-
-
+      Err(e) => Err(e),
+    }
   }
 
   pub fn check_user(&self, creds: UserValidationParams) -> Result<UserJwtInfo, Response> {
@@ -246,20 +270,22 @@ impl Database {
             email: user.email,
             first_name: user.first_name,
             last_name: user.last_name,
-            is_admin: user.is_admin
+            is_admin: user.is_admin,
           };
           if creds.email != extend_user.email {
-            return Err(Response { message: "Email Error".to_string() })
+            return Err(Response {
+              message: "Email Error".to_string(),
+            });
           }
           Ok(payload)
         } else {
           Err(Response {
-            message: "Failed to verify user".to_string()
+            message: "Failed to verify user".to_string(),
           })
         }
-      },
+      }
       None => Err(Response {
-        message: "Failed to verify user".to_string()
+        message: "Failed to verify user".to_string(),
       }),
     }
   }
