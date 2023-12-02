@@ -41,7 +41,7 @@ pub struct UserValidationParams {
 pub struct Recipe {
   #[diesel(sql_type = Integer)]
   pub id: i32,
-  pub user_id: i32,
+  pub creator_id: i32,
   pub name: String,
   pub description: Option<String>,
   pub hidden: Option<bool>,
@@ -94,7 +94,7 @@ pub struct RecipeStep {
 #[diesel(table_name = crate::models::schema::recipe)]
 pub struct NewRecipe {
   pub name: String,
-  pub user_id: i32,
+  pub creator_id: i32,
   pub description: Option<String>,
   pub hidden: Option<bool>,
 }

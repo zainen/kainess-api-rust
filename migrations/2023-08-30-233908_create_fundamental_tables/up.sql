@@ -14,13 +14,13 @@ INSERT INTO users (email, first_name, last_name, password) VALUES
 
 CREATE TABLE IF NOT EXISTS recipe (
   id  SERIAL PRIMARY KEY,
-  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  creator_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   name VARCHAR(255) NOT NULL,
   description TEXT,
   hidden BOOLEAN DEFAULT FALSE
 );
 
-INSERT INTO recipe (user_id, name, description) VALUES 
+INSERT INTO recipe (creator_id, name, description) VALUES 
   (1, 'Gnocchi with Creamed Spinach', 'Honestly, we can''t get enough of this super fast weeknight meal. \nGnocchi is a pillowy soft pasta that, if you aren''t keeping in your pantry, you should be. And frozen spinach is a versatile and healthy ingredient that can be used so many different ways. Besides those two, all you need for this 10-minute meal is some cream, some cheese, and a few pantry spices. \nServe it with a glass of wine and you''ve got a fancy dinner for two that tastes like it took a lot more work than it actually did.');
 
 CREATE TABLE IF NOT EXISTS recipe_ingredient (

@@ -6,10 +6,6 @@ use std::fmt::Error;
 use bcrypt::{hash, verify};
 
 use crate::models::{
-  schema::recipe::dsl::{id as id_of_recipe, recipe},
-  structs::GeneralDbQuerySuccess,
-};
-use crate::models::{
   schema::recipe_ingredient::dsl::{recipe_id as ingredient_recipe_id, recipe_ingredient},
   structs::UserValidationParams,
 };
@@ -29,6 +25,13 @@ use crate::models::{
     RecipeWithDetails,
   },
   types::GetAllRecipes,
+};
+use crate::{
+  api::auth::structs::LoginParams,
+  models::{
+    schema::recipe::dsl::{id as id_of_recipe, recipe},
+    structs::GeneralDbQuerySuccess,
+  },
 };
 
 type DBPool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -241,7 +244,7 @@ impl Database {
           first_name,
           last_name,
           is_admin,
-          ..
+          .. // unused rest of User struct
         } = new_user;
         Ok(UserJwtInfo {
           id,
@@ -255,7 +258,7 @@ impl Database {
     }
   }
 
-  pub fn check_user(&self, creds: UserValidationParams) -> Result<UserJwtInfo, Response> {
+  pub fn check_user(&self, creds: LoginParams) -> Result<UserJwtInfo, Response> {
     let found_user: Option<User> = users
       .filter(email_column.eq(&creds.email))
       .load::<User>(&mut self.pool.get().unwrap())

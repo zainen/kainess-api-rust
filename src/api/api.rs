@@ -7,7 +7,7 @@ use super::routes::{
     get_recipe_details, get_recipes, update_recipe_base, update_recipe_ingredient,
     update_recipe_step,
   },
-  user::{create_user, login},
+  user::{create_user, login, test},
 };
 
 pub fn config(cfg: &mut web::ServiceConfig) {
@@ -26,5 +26,10 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(delete_recipe_step),
     )
     .service(web::scope("/send-email").service(handle_email))
-    .service(web::scope("/user").service(login).service(create_user));
+    .service(
+      web::scope("/user")
+        .service(login)
+        .service(create_user)
+        .service(test),
+    );
 }

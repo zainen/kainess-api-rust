@@ -3,7 +3,7 @@
 diesel::table! {
     recipe (id) {
         id -> Int4,
-        user_id -> Int4,
+        creator_id -> Int4,
         #[max_length = 255]
         name -> Varchar,
         description -> Nullable<Text>,
@@ -48,7 +48,7 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(recipe -> users (user_id));
+diesel::joinable!(recipe -> users (creator_id));
 diesel::joinable!(recipe_ingredient -> recipe (recipe_id));
 diesel::joinable!(recipe_step -> recipe (recipe_id));
 
