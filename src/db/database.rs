@@ -5,15 +5,15 @@ use std::fmt::Error;
 
 use bcrypt::{hash, verify};
 
-use crate::models::{
+use crate::{models::{
   schema::recipe_ingredient::dsl::{recipe_id as ingredient_recipe_id, recipe_ingredient},
   structs::UserValidationParams,
-};
+}, api::auth::structs::UserJwtInfo};
 use crate::models::{
   schema::recipe_step::dsl::{
     id as step_id, recipe_id as step_recipe_id, recipe_step, step_number,
   },
-  structs::{Response, UserJwtInfo},
+  structs::Response,
 };
 use crate::models::{
   schema::users::dsl::{email as email_column, users},

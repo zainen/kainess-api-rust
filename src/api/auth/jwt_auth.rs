@@ -5,18 +5,17 @@ use std::future::{ready, Ready};
 
 use actix_web::error::ErrorUnauthorized;
 use actix_web::{dev::Payload, Error as ActixWebError};
-use actix_web::{http, web, FromRequest, HttpMessage, HttpRequest};
+use actix_web::{http, FromRequest, HttpMessage, HttpRequest};
 use jsonwebtoken::{decode, encode, EncodingKey, Header, DecodingKey, Validation};
 use serde::Serialize;
 
 use chrono::{prelude::*, Duration};
 
-use crate::models::structs::{Response, UserJwtInfo};
+use crate::models::structs::Response;
 use dotenv::dotenv;
 
-use crate::db::database::Database;
 
-use super::structs::UserTokenClaims;
+use super::structs::{UserTokenClaims, UserJwtInfo};
 
 #[derive(Debug, Serialize)]
 struct ErrorResponse {
