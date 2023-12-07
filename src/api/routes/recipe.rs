@@ -1,8 +1,8 @@
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
-use crate::models::structs::{
+use crate::{models::structs::{
   CreateRecipe, RecipeWithDetails, Response, UpdateSuccessRecipe, UpdateSuccessRecipeIngredient,
-};
+}, api::auth::jwt_auth::{self, JwtMiddleware}};
 use crate::models::structs::{GeneralDbQuerySuccess, UpdateSuccessRecipeStep};
 use crate::{
   db::database::Database,
@@ -21,17 +21,25 @@ pub async fn get_recipes(db: web::Data<Database>) -> impl Responder {
 pub async fn create_recipe(
   db: web::Data<Database>,
   recipe_information: web::Json<CreateRecipe>,
+  jwt: jwt_auth::JwtMiddleware
 ) -> impl Responder {
+  let JwtMiddleware {user_id} = jwt;
+
   let inner_info: CreateRecipe = recipe_information.into_inner();
   let recipe_to_create: NewRecipe = inner_info.recipe;
+  if &user_id != &recipe_to_create.creator_id {
+    return HttpResponse::NotAcceptable().json(Response {
+      message: "Id does not match".to_string()
+    })
+  }
   let ingredients_to_insert: Vec<NewRecipeIngredient> = inner_info.ingredients;
   let steps_to_insert: Vec<NewRecipeStep> = inner_info.steps;
 
   let insert_result = db.create_recipe(recipe_to_create, ingredients_to_insert, steps_to_insert);
 
   match insert_result {
-    Ok(_) => HttpResponse::Ok(),
-    Err(_) => HttpResponse::NotAcceptable(),
+    Ok(_) => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
+    Err(_) => HttpResponse::NotAcceptable().json(GeneralDbQuerySuccess { success: false }),
   }
 }
 

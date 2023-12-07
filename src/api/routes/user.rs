@@ -21,10 +21,13 @@ pub async fn create_user(
       Err(e) => HttpResponse::BadRequest().json(e),
     },
     // left default response as static Response to hide reason for db failure.
-    // TODO add logger for internal problems
-    Err(_) => HttpResponse::BadRequest().json(Response {
+    // TODO check other way of printing error
+    Err(e) => {
+      eprintln!("{e}");
+      HttpResponse::BadRequest().json(Response {
       message: "Failed to create user".to_string(),
-    }),
+    })
+  },
   }
 }
 

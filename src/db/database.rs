@@ -177,10 +177,12 @@ impl Database {
   }
 
   pub fn delete_recipe(&self, target_recipe: Recipe) -> GeneralDbQuerySuccess {
-    diesel::delete(recipe.find(target_recipe.id))
-      .execute(&mut self.pool.get().unwrap())
-      .expect("Failed to delete the recipe");
-    GeneralDbQuerySuccess { success: true }
+    match diesel::delete(recipe.find(target_recipe.id))
+      .execute(&mut self.pool.get().unwrap()) {
+        Ok(_) => GeneralDbQuerySuccess { success: true },
+        Err(_) => GeneralDbQuerySuccess { success: false }
+      }
+    
   }
 
   pub fn delete_recipe_ingredient(

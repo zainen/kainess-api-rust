@@ -55,7 +55,6 @@ impl FromRequest for JwtMiddleware {
         };
         return ready(Err(ErrorUnauthorized(json_error)));
       }
-      println!("token: {}", token.clone().expect("token"));
 
     let jwt_secret = std::env::var("JWT_SECRET").expect("MISSING JWT SECRET");
 

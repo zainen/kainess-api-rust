@@ -80,7 +80,7 @@ pub struct RecipeStep {
   pub step_directions: String,
 }
 
-#[derive(Insertable, Serialize, Deserialize, AsChangeset)]
+#[derive(Debug, Insertable, Serialize, Deserialize, AsChangeset)]
 #[diesel(table_name = crate::models::schema::recipe)]
 pub struct NewRecipe {
   pub name: String,
