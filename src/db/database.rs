@@ -5,10 +5,6 @@ use std::fmt::Error;
 
 use bcrypt::{hash, verify};
 
-use crate::{models::{
-  schema::recipe_ingredient::dsl::{recipe_id as ingredient_recipe_id, recipe_ingredient},
-  structs::UserValidationParams,
-}, api::auth::structs::UserJwtInfo};
 use crate::models::{
   schema::recipe_step::dsl::{
     id as step_id, recipe_id as step_recipe_id, recipe_step, step_number,
@@ -33,6 +29,13 @@ use crate::{
     structs::GeneralDbQuerySuccess,
   },
 };
+use crate::{
+  api::auth::structs::UserJwtInfo,
+  models::{
+    schema::recipe_ingredient::dsl::{recipe_id as ingredient_recipe_id, recipe_ingredient},
+    structs::UserValidationParams,
+  },
+};
 
 type DBPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -55,6 +58,14 @@ impl Database {
     recipe
       .load::<Recipe>(&mut self.pool.get().unwrap())
       .expect("Missing")
+  }
+
+  pub fn get_recipe(&self, target_id: i32) -> Option<Recipe> {
+    recipe
+      .filter(id_of_recipe.eq(target_id))
+      .load::<Recipe>(&mut self.pool.get().unwrap())
+      .unwrap()
+      .pop()
   }
 
   pub fn get_recipe_details(&self, target_id: i32) -> RecipeWithDetails {
@@ -177,12 +188,10 @@ impl Database {
   }
 
   pub fn delete_recipe(&self, target_recipe: Recipe) -> GeneralDbQuerySuccess {
-    match diesel::delete(recipe.find(target_recipe.id))
-      .execute(&mut self.pool.get().unwrap()) {
-        Ok(_) => GeneralDbQuerySuccess { success: true },
-        Err(_) => GeneralDbQuerySuccess { success: false }
-      }
-    
+    match diesel::delete(recipe.find(target_recipe.id)).execute(&mut self.pool.get().unwrap()) {
+      Ok(_) => GeneralDbQuerySuccess { success: true },
+      Err(_) => GeneralDbQuerySuccess { success: false },
+    }
   }
 
   pub fn delete_recipe_ingredient(

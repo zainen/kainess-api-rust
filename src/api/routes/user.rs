@@ -1,5 +1,8 @@
 use crate::{
-  api::auth::{jwt_auth::{self, create_token}, structs::LoginParams},
+  api::auth::{
+    jwt_auth::{self, create_token},
+    structs::LoginParams,
+  },
   models::structs::Response,
 };
 use actix_web::{get, post, web, HttpMessage, HttpRequest, HttpResponse, Responder};
@@ -25,9 +28,9 @@ pub async fn create_user(
     Err(e) => {
       eprintln!("{e}");
       HttpResponse::BadRequest().json(Response {
-      message: "Failed to create user".to_string(),
-    })
-  },
+        message: "Failed to create user".to_string(),
+      })
+    }
   }
 }
 

@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
 use diesel::{AsChangeset, Identifiable};
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UserTokenClaims {

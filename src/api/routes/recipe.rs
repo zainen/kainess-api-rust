@@ -1,9 +1,12 @@
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
-use crate::{models::structs::{
-  CreateRecipe, RecipeWithDetails, Response, UpdateSuccessRecipe, UpdateSuccessRecipeIngredient,
-}, api::auth::jwt_auth::{self, JwtMiddleware}};
 use crate::models::structs::{GeneralDbQuerySuccess, UpdateSuccessRecipeStep};
+use crate::{
+  api::auth::jwt_auth,
+  models::structs::{
+    CreateRecipe, RecipeWithDetails, Response, UpdateSuccessRecipe, UpdateSuccessRecipeIngredient,
+  },
+};
 use crate::{
   db::database::Database,
   models::structs::{
@@ -21,16 +24,17 @@ pub async fn get_recipes(db: web::Data<Database>) -> impl Responder {
 pub async fn create_recipe(
   db: web::Data<Database>,
   recipe_information: web::Json<CreateRecipe>,
-  jwt: jwt_auth::JwtMiddleware
+  jwt: jwt_auth::JwtMiddleware,
 ) -> impl Responder {
-  let JwtMiddleware {user_id} = jwt;
-
+  // extract web json
   let inner_info: CreateRecipe = recipe_information.into_inner();
   let recipe_to_create: NewRecipe = inner_info.recipe;
-  if &user_id != &recipe_to_create.creator_id {
+
+  // JWT block if not correct id
+  if &jwt.claims.id != &recipe_to_create.creator_id {
     return HttpResponse::NotAcceptable().json(Response {
-      message: "Id does not match".to_string()
-    })
+      message: "Id does not match".to_string(),
+    });
   }
   let ingredients_to_insert: Vec<NewRecipeIngredient> = inner_info.ingredients;
   let steps_to_insert: Vec<NewRecipeStep> = inner_info.steps;
@@ -48,7 +52,9 @@ pub async fn get_recipe_details(
   db: web::Data<Database>,
   recipe_id_path: web::Path<i32>,
 ) -> impl Responder {
+  // extract web json
   let recipe_id = recipe_id_path.into_inner();
+
   let recipe_with_details: RecipeWithDetails = db.get_recipe_details(recipe_id);
   match &recipe_with_details.recipe {
     Some(_) => HttpResponse::Ok().json(recipe_with_details),
@@ -66,8 +72,18 @@ pub async fn update_recipe_base(
   db: web::Data<Database>,
   recipe_id_path: web::Path<i32>,
   recipe_to_update_json: web::Json<Recipe>,
+  jwt: jwt_auth::JwtMiddleware,
 ) -> impl Responder {
+  // extract web json
   let recipe_to_update: Recipe = recipe_to_update_json.into_inner();
+
+  // block if not right id
+  if &jwt.claims.id != &recipe_to_update.creator_id {
+    return HttpResponse::NotAcceptable().json(Response {
+      message: "Id does not match".to_string(),
+    });
+  }
+  // check recipe base id and attempt update
   if recipe_to_update.id == recipe_id_path.into_inner() {
     let result: Option<Recipe> = db.update_recipe(recipe_to_update);
     match result {
@@ -91,9 +107,20 @@ pub async fn update_recipe_ingredient(
   db: web::Data<Database>,
   path_params: web::Path<(i32, i32)>,
   ingredient_json: web::Json<RecipeIngredient>,
+  jwt: jwt_auth::JwtMiddleware,
 ) -> impl Responder {
+  // extract web json
   let (recipe_id, ingredient_id) = path_params.into_inner();
   let ingredient: RecipeIngredient = ingredient_json.into_inner();
+
+  if let Some(recipe) = db.get_recipe(recipe_id) {
+    if recipe.creator_id != jwt.claims.id {
+      return HttpResponse::NotAcceptable().json(Response {
+        message: "Not Permitted".to_string(),
+      });
+    }
+  }
+
   let ingredient_id_check = ingredient.id != ingredient_id;
   if ingredient_id_check {
     return HttpResponse::NotAcceptable().json(Response {
@@ -123,8 +150,17 @@ pub async fn update_recipe_step(
   db: web::Data<Database>,
   path_params: web::Path<(i32, i32)>,
   recipe_step_json: web::Json<RecipeStep>,
+  jwt: jwt_auth::JwtMiddleware,
 ) -> impl Responder {
   let (recipe_id, step_id) = path_params.into_inner();
+  if let Some(recipe) = db.get_recipe(recipe_id) {
+    if recipe.creator_id != jwt.claims.id {
+      return HttpResponse::NotAcceptable().json(Response {
+        message: "Not Permitted".to_string(),
+      });
+    }
+  }
+
   let recipe_step = recipe_step_json.into_inner();
   let step_id_check = recipe_step.id != step_id;
   if step_id_check {
@@ -155,9 +191,19 @@ pub async fn add_recipe_step(
   db: web::Data<Database>,
   path_params: web::Path<(i32, i32)>,
   recipe_step_json: web::Json<NewRecipeStep>,
+  jwt: jwt_auth::JwtMiddleware,
 ) -> impl Responder {
+  // extract web json
   let (recipe_id, step_number) = path_params.into_inner();
   let recipe_step = recipe_step_json.into_inner();
+
+  if let Some(recipe) = db.get_recipe(recipe_id) {
+    if recipe.creator_id != jwt.claims.id {
+      return HttpResponse::NotAcceptable().json(Response {
+        message: "Not Permitted".to_string(),
+      });
+    }
+  }
 
   let updated_ingredients = db.add_recipe_step(recipe_step, recipe_id, step_number - 1);
   HttpResponse::Ok().json(updated_ingredients)
@@ -168,20 +214,30 @@ pub async fn delete_recipe(
   db: web::Data<Database>,
   recipe_id_path: web::Path<i32>,
   recipe_json: web::Json<Recipe>,
+  jwt: jwt_auth::JwtMiddleware,
 ) -> impl Responder {
+  // extract web json
   let recipe_to_delete = recipe_json.into_inner();
+  // reject if dont match
   if recipe_to_delete.id != recipe_id_path.into_inner() {
-    HttpResponse::NotAcceptable().json(Response {
+    return HttpResponse::NotAcceptable().json(Response {
       message: "recipe id and id provided do not match".to_string(),
-    })
-  } else {
-    let result = db.delete_recipe(recipe_to_delete);
-    match result.success {
-      true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
-      false => HttpResponse::NotModified().json(Response {
-        message: "Failed to delete the recipe".to_string(),
-      }),
+    });
+  }
+  // reject if not recipe owner
+  if let Some(recipe) = db.get_recipe(recipe_to_delete.id) {
+    if recipe.creator_id != jwt.claims.id {
+      return HttpResponse::NotAcceptable().json(Response {
+        message: "Not Permitted".to_string(),
+      });
     }
+  }
+  let result = db.delete_recipe(recipe_to_delete);
+  match result.success {
+    true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
+    false => HttpResponse::NotModified().json(Response {
+      message: "Failed to delete the recipe".to_string(),
+    }),
   }
 }
 
@@ -190,27 +246,37 @@ pub async fn delete_recipe_ingredient(
   db: web::Data<Database>,
   path_params: web::Path<(i32, i32)>,
   ingredient_json: web::Json<RecipeIngredient>,
+  jwt: jwt_auth::JwtMiddleware,
 ) -> impl Responder {
-  let (recipe_id_path, ingredient_id_path) = path_params.into_inner();
+  // extract web json
+  let (recipe_id, ingredient_id) = path_params.into_inner();
   let ingredient = ingredient_json.into_inner();
-  let ingredient_id_check_failed = ingredient_id_path != ingredient.id;
+
+  let ingredient_id_check_failed = ingredient_id != ingredient.id;
   if ingredient_id_check_failed {
     return HttpResponse::NotAcceptable().json(Response {
       message: "ingredient id does not match".to_string(),
     });
   }
-  if ingredient.recipe_id != recipe_id_path {
-    HttpResponse::NotAcceptable().json(Response {
+  if ingredient.recipe_id != recipe_id {
+    return HttpResponse::NotAcceptable().json(Response {
       message: "recipe id and id provided do not match".to_string(),
-    })
-  } else {
-    let result = db.delete_recipe_ingredient(ingredient);
-    match result.success {
-      true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
-      false => HttpResponse::NotModified().json(Response {
-        message: "Failed to delete the recipe".to_string(),
-      }),
+    });
+  }
+  // reject if not recipe owner
+  if let Some(recipe) = db.get_recipe(recipe_id) {
+    if recipe.creator_id != jwt.claims.id {
+      return HttpResponse::NotAcceptable().json(Response {
+        message: "Not Permitted".to_string(),
+      });
     }
+  }
+  let result = db.delete_recipe_ingredient(ingredient);
+  match result.success {
+    true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
+    false => HttpResponse::NotModified().json(Response {
+      message: "Failed to delete the recipe".to_string(),
+    }),
   }
 }
 
@@ -219,9 +285,12 @@ pub async fn delete_recipe_step(
   db: web::Data<Database>,
   path_params: web::Path<(i32, i32)>,
   recipe_step_json: web::Json<RecipeStep>,
+  jwt: jwt_auth::JwtMiddleware,
 ) -> impl Responder {
+  // extract web json
   let (recipe_id, step_id) = path_params.into_inner();
   let recipe_step = recipe_step_json.into_inner();
+
   let step_id_check = step_id != recipe_step.id;
   if step_id_check {
     return HttpResponse::NotAcceptable().json(Response {
@@ -229,16 +298,23 @@ pub async fn delete_recipe_step(
     });
   }
   if recipe_step.recipe_id != recipe_id {
-    HttpResponse::NotAcceptable().json(Response {
+    return HttpResponse::NotAcceptable().json(Response {
       message: "recipe id and id provided do not match".to_string(),
-    })
-  } else {
-    let result = db.delete_recipe_step(recipe_step);
-    match result.success {
-      true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
-      false => HttpResponse::NotModified().json(Response {
-        message: "Failed to delete the recipe".to_string(),
-      }),
+    });
+  }
+  // reject if not recipe owner
+  if let Some(recipe) = db.get_recipe(recipe_id) {
+    if recipe.creator_id != jwt.claims.id {
+      return HttpResponse::NotAcceptable().json(Response {
+        message: "Not Permitted".to_string(),
+      });
     }
+  }
+  let result = db.delete_recipe_step(recipe_step);
+  match result.success {
+    true => HttpResponse::Ok().json(GeneralDbQuerySuccess { success: true }),
+    false => HttpResponse::NotModified().json(Response {
+      message: "Failed to delete the recipe".to_string(),
+    }),
   }
 }

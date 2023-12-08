@@ -5,17 +5,16 @@ use std::future::{ready, Ready};
 
 use actix_web::error::ErrorUnauthorized;
 use actix_web::{dev::Payload, Error as ActixWebError};
-use actix_web::{http, FromRequest, HttpMessage, HttpRequest};
-use jsonwebtoken::{decode, encode, EncodingKey, Header, DecodingKey, Validation};
-use serde::Serialize;
+use actix_web::{http, FromRequest, HttpRequest};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 
 use chrono::{prelude::*, Duration};
 
 use crate::models::structs::Response;
 use dotenv::dotenv;
 
-
-use super::structs::{UserTokenClaims, UserJwtInfo};
+use super::structs::{UserJwtInfo, UserTokenClaims};
 
 #[derive(Debug, Serialize)]
 struct ErrorResponse {
@@ -29,15 +28,15 @@ impl fmt::Display for ErrorResponse {
   }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct JwtMiddleware {
-  pub user_id: i32,
+  pub claims: UserTokenClaims,
 }
 
 impl FromRequest for JwtMiddleware {
   type Error = ActixWebError;
-  type Future = Ready<Result<Self, Self::Error>>;
+  type Future = Ready<Result<Self, ActixWebError>>;
   fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-
     let token = req
       .cookie("token")
       .map(|c| c.value().to_string())
@@ -47,14 +46,14 @@ impl FromRequest for JwtMiddleware {
           .get(http::header::AUTHORIZATION)
           .map(|h| h.to_str().unwrap().split_at(7).1.to_string())
       });
-      
-      if token.is_none() {
-        let json_error = ErrorResponse {
-          status: "fail".to_string(),
-          message: "You are not logged in, please provide a token".to_string(),
-        };
-        return ready(Err(ErrorUnauthorized(json_error)));
-      }
+
+    if token.is_none() {
+      let json_error = ErrorResponse {
+        status: "fail".to_string(),
+        message: "You are not logged in, please provide a token".to_string(),
+      };
+      return ready(Err(ErrorUnauthorized(json_error)));
+    }
 
     let jwt_secret = std::env::var("JWT_SECRET").expect("MISSING JWT SECRET");
 
@@ -73,14 +72,12 @@ impl FromRequest for JwtMiddleware {
       }
     };
 
-    let user_id = claims.id;
-    req.extensions_mut().insert::<i32>(user_id.to_owned());
+    // let user_id = claims.id;
+    // req.extensions_mut().insert::<i32>(user_id.to_owned());
 
-    ready(Ok(JwtMiddleware { user_id }))
+    ready(Ok(JwtMiddleware { claims }))
   }
 }
-
-
 
 // TODO check how to handle error
 pub fn create_token(payload: UserJwtInfo) -> Result<String, Response> {
@@ -91,7 +88,13 @@ pub fn create_token(payload: UserJwtInfo) -> Result<String, Response> {
       .expect("MISSING JWT SECRET")
       .as_bytes(),
   );
-  let UserJwtInfo {email, first_name, id, is_admin, last_name} = payload;
+  let UserJwtInfo {
+    email,
+    first_name,
+    id,
+    is_admin,
+    last_name,
+  } = payload;
 
   let now = Utc::now();
   let iat = now.timestamp() as usize;
@@ -108,7 +111,6 @@ pub fn create_token(payload: UserJwtInfo) -> Result<String, Response> {
 
   let header = Header::new(jwt::Algorithm::HS256);
 
-  
   match encode(&header, &claims, &encoding_key) {
     Ok(token) => Ok(token),
     Err(_) => Err(Response {
