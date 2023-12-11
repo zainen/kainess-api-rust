@@ -16,12 +16,14 @@ use crate::{
 
 #[get("/")]
 pub async fn get_recipes(db: web::Data<Database>) -> impl Responder {
+  // visibile to without authentication
   let recipes: Vec<Recipe> = db.get_recipes();
   HttpResponse::Ok().json(recipes)
 }
 
 #[post("/")]
 pub async fn create_recipe(
+  // visibile without authentication
   db: web::Data<Database>,
   recipe_information: web::Json<CreateRecipe>,
   jwt: jwt_auth::JwtMiddleware,
