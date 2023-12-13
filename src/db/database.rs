@@ -1,15 +1,16 @@
-use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
+use diesel::{prelude::*, query_builder::SqlQuery};
 use dotenv::dotenv;
 use std::fmt::Error;
 
 use bcrypt::{hash, verify};
 
+use crate::models::schema::herbs::dsl::{function, herb_id, herbs};
 use crate::models::{
   schema::recipe_step::dsl::{
     id as step_id, recipe_id as step_recipe_id, recipe_step, step_number,
   },
-  structs::Response,
+  structs::{Herb, Response},
 };
 use crate::models::{
   schema::users::dsl::{email as email_column, users},
@@ -302,5 +303,24 @@ impl Database {
         message: "Failed to verify user".to_string(),
       }),
     }
+  }
+
+  // TCM DB FUNCTIONS
+  pub fn get_herbs(
+    &self,
+    start_from_herb_id: Option<String>,
+  ) -> Result<Vec<Herb>, diesel::result::Error> {
+    let filtered_herbs = herbs
+      .filter(function.is_not_null())
+      .limit(10)
+      .load::<Herb>(&mut self.pool.get().unwrap())
+      .unwrap();
+
+    if let Some(herb) = start_from_herb_id {
+      if herb == "something".to_string() {
+        return Err(diesel::result::Error::NotFound);
+      }
+    }
+    Ok(filtered_herbs)
   }
 }

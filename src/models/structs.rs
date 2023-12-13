@@ -1,5 +1,9 @@
-use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable};
+use diesel::{
+  prelude::Associations, sql_types::Text, AsChangeset, Identifiable, Insertable, Queryable,
+  Selectable,
+};
 use serde::{Deserialize, Serialize};
+// use crate::db::queryable_text::TextToString;
 
 #[derive(
   PartialEq, Serialize, Deserialize, Identifiable, Debug, Clone, Queryable, Selectable, AsChangeset,
@@ -139,6 +143,33 @@ pub struct UpdateSuccessRecipeIngredient {
 pub struct UpdateSuccessRecipeStep {
   pub success: bool,
   pub recipe_step: RecipeStep,
+}
+
+// TCM DB
+#[derive(Queryable, Serialize, Deserialize, Debug, Clone, Selectable)]
+#[diesel(table_name = crate::models::schema::herbs)]
+pub struct Herb {
+  pub tcmbank_id: String,
+  pub level1_name_en: Option<String>,
+  pub level2_name: Option<String>,
+  pub tcm_name: Option<String>,
+  pub tcm_name_en: Option<String>,
+  pub herb_pinyin_name: Option<String>,
+  pub herb_latin_name: Option<String>,
+  pub properties: Option<String>,
+  pub meridians: Option<String>,
+  pub usepart: Option<String>,
+  pub function: Option<String>,
+  pub indication: Option<String>,
+  pub toxicity: Option<String>,
+  pub clinical_manifestations: Option<String>,
+  pub therapeutic_en_class: Option<String>,
+  pub therapeutic_cn_class: Option<String>,
+  pub tcmid_id: Option<String>,
+  pub tcm_id_id: Option<i32>,
+  pub symmap_id: Option<i32>,
+  pub tcmsp_id: Option<i32>,
+  pub herb_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
