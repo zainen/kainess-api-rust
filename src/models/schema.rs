@@ -1,7 +1,8 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    herbs (tcmbank_id) {
+    herbs (id) {
+        id -> Int4,
         #[max_length = 16]
         tcmbank_id -> Varchar,
         #[max_length = 255]

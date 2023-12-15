@@ -51,3 +51,5 @@ CREATE TABLE IF NOT EXISTS recipe_step (
 INSERT INTO recipe_step (recipe_id, step_number, step_directions) VALUES 
   (1, 1, 'In a large pot of salted water, cook gnocchi according to package directions. '),
   (1, 2, 'Meanwhile, cook cream of spinach and cream in a large, nonstick skillet over medium heat until warm and thickened, 3 to 4 minutes. Season with salt and pepper. Add Parmesan, nutmeg, and gnocchi, and stir to coat. Serve garnished with lemon zest.');
+
+

@@ -1,8 +1,7 @@
-use diesel::{
-  prelude::Associations, sql_types::Text, AsChangeset, Identifiable, Insertable, Queryable,
-  Selectable,
-};
+use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
+
+use super::types::HerbVec;
 // use crate::db::queryable_text::TextToString;
 
 #[derive(
@@ -146,9 +145,10 @@ pub struct UpdateSuccessRecipeStep {
 }
 
 // TCM DB
-#[derive(Queryable, Serialize, Deserialize, Debug, Clone, Selectable)]
+#[derive(Queryable, Serialize, Deserialize, Debug, Clone, Selectable, Identifiable)]
 #[diesel(table_name = crate::models::schema::herbs)]
 pub struct Herb {
+  pub id: i32,
   pub tcmbank_id: String,
   pub level1_name_en: Option<String>,
   pub level2_name: Option<String>,
@@ -173,6 +173,11 @@ pub struct Herb {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct KeywordFoundHerbs {
+  pub herbs: HerbVec,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct JWT {
   token: String,
 }
@@ -187,4 +192,15 @@ pub struct Response {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GeneralDbQuerySuccess {
   pub success: bool,
+}
+
+#[derive(Queryable, Serialize, Deserialize, Debug, Clone, Selectable, Identifiable)]
+#[diesel(table_name = crate::models::schema::herbs)]
+pub struct QueryHerbs {
+  pub id: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SearchKeywords {
+  pub keywords: Vec<String>,
 }

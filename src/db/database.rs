@@ -1,11 +1,15 @@
+use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
-use diesel::{prelude::*, query_builder::SqlQuery};
 use dotenv::dotenv;
-use std::fmt::Error;
+use std::{collections::HashSet, fmt::Error, sync::Arc};
 
 use bcrypt::{hash, verify};
 
-use crate::models::schema::herbs::dsl::{function, herb_id, herbs};
+use crate::models::{
+  schema::herbs::dsl::{function, herbs, id as herb_db_id},
+  structs::{QueryHerbs, SearchKeywords},
+  types::HerbVec,
+};
 use crate::models::{
   schema::recipe_step::dsl::{
     id as step_id, recipe_id as step_recipe_id, recipe_step, step_number,
@@ -306,21 +310,54 @@ impl Database {
   }
 
   // TCM DB FUNCTIONS
-  pub fn get_herbs(
-    &self,
-    start_from_herb_id: Option<String>,
-  ) -> Result<Vec<Herb>, diesel::result::Error> {
-    let filtered_herbs = herbs
+
+  // LIMIT 10 herbs per call
+  pub fn get_herbs(&self, start_from_herb_id: i32) -> Result<HerbVec, diesel::result::Error> {
+    let filtered_herbs = Arc::new(
+      herbs
+        .select(Herb::as_select())
+        .filter(function.is_not_null())
+        .filter(herb_db_id.gt(start_from_herb_id))
+        .order_by(herb_db_id.asc())
+        .limit(100),
+    )
+    .load::<Herb>(&mut self.pool.get().unwrap())
+    .unwrap();
+
+    Ok(filtered_herbs)
+  }
+
+  pub fn search_herbs(&self, search_params: SearchKeywords) -> Result<HerbVec, ()> {
+    let iterator = search_params.keywords.iter();
+
+    // get all unique keys with function related to key words
+    let mut id_set: HashSet<i32> = HashSet::new();
+    for iter in iterator {
+      let fmt = format!("%{}%", iter);
+      let filtered_herbs: Vec<QueryHerbs> = Arc::new(
+        herbs
+          .select(QueryHerbs::as_select())
+          .filter(function.like(&fmt))
+          .order_by(herb_db_id.asc()),
+      )
+      .limit(100)
+      .load::<QueryHerbs>(&mut self.pool.get().unwrap())
+      .unwrap();
+
+      for QueryHerbs { id } in filtered_herbs.iter() {
+        id_set.insert(*id);
+      }
+    }
+
+    let filtered_herbs: HerbVec = herbs
+      .select(Herb::as_select())
       .filter(function.is_not_null())
-      .limit(10)
+      .filter(herb_db_id.eq_any(id_set.clone()))
+      .order_by(herb_db_id.asc())
+      .limit(100)
       .load::<Herb>(&mut self.pool.get().unwrap())
       .unwrap();
 
-    if let Some(herb) = start_from_herb_id {
-      if herb == "something".to_string() {
-        return Err(diesel::result::Error::NotFound);
-      }
-    }
     Ok(filtered_herbs)
   }
 }
