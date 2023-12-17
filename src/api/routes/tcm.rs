@@ -33,3 +33,20 @@ pub async fn search_herbs(
     }),
   }
 }
+
+#[get("/search/{herb_id_path}")]
+pub async fn get_herb_info(
+  db: web::Data<Database>,
+  herb_id_path: web::Path<i32>
+) -> impl Responder {
+  let herb_id = herb_id_path.into_inner();
+
+  let query_herb = db.get_herb_information(herb_id);
+
+  match query_herb {
+    Ok(herb) => HttpResponse::Ok().json(herb),
+    Err(_) => HttpResponse::NotFound().json(Response {
+      message: "Herb not found".to_string()
+    })
+  }
+}

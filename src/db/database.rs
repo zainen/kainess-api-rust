@@ -327,6 +327,7 @@ impl Database {
     Ok(filtered_herbs)
   }
 
+  // TODO update error
   pub fn search_herbs(&self, search_params: SearchKeywords) -> Result<HerbVec, ()> {
     let iterator = search_params.keywords.iter();
 
@@ -359,5 +360,10 @@ impl Database {
       .unwrap();
 
     Ok(filtered_herbs)
+  }
+
+  // TODO update error
+  pub fn get_herb_information(&self, herb_id: i32) -> Result<Vec<Herb>, diesel::result::Error> {
+    herbs.filter(herb_db_id.eq(herb_id)).load::<Herb>(&mut self.pool.get().unwrap())
   }
 }
