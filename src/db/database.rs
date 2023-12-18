@@ -7,7 +7,7 @@ use bcrypt::{hash, verify};
 
 use crate::models::{
   schema::herbs::dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en},
-  structs::{QueryHerbs, SearchKeywords, SearchBy},
+  structs::{QueryHerbs, SearchBy, SearchKeywords},
   types::HerbVec,
 };
 use crate::models::{
@@ -48,6 +48,7 @@ pub struct Database {
   pool: DBPool,
 }
 
+// RECIPE DB FN
 impl Database {
   pub fn new() -> Self {
     dotenv().ok();
@@ -226,7 +227,10 @@ impl Database {
     }
     GeneralDbQuerySuccess { success: true }
   }
+}
 
+// USER DATABASE FN
+impl Database {
   pub fn create_user(
     &self,
     user: UserValidationParams,
@@ -308,12 +312,13 @@ impl Database {
       }),
     }
   }
+}
 
-  // TCM DB FUNCTIONS
-
+// TCM DATABASE FN
+impl Database {
   // LIMIT 10 herbs per call
   pub fn get_herbs(&self, start_from_herb_id: i32) -> Result<HerbVec, diesel::result::Error> {
-    let filtered_herbs = Arc::new(
+    Arc::new(
       herbs
         .select(Herb::as_select())
         .filter(function.is_not_null())
@@ -322,20 +327,19 @@ impl Database {
         .limit(100),
     )
     .load::<Herb>(&mut self.pool.get().unwrap())
-    .unwrap();
-
-    Ok(filtered_herbs)
   }
 
-  // TODO update error
-  pub fn search_herbs(&self, search_params: SearchKeywords) -> Result<HerbVec, ()> {
+  pub fn search_herbs(
+    &self,
+    search_params: SearchKeywords,
+  ) -> Result<HerbVec, diesel::result::Error> {
     let iterator = search_params.keywords.iter();
 
     // get all unique keys with function related to key words
     let mut id_set: HashSet<i32> = HashSet::new();
     for iter in iterator {
       let fmt = format!("%{}%", iter);
-      let filtered_herbs: Vec<QueryHerbs> = Arc::new(
+      let filtered_herbs: Vec<QueryHerbs> = match Arc::new(
         herbs
           .select(QueryHerbs::as_select())
           .filter(function.ilike(&fmt))
@@ -343,37 +347,45 @@ impl Database {
       )
       .limit(100)
       .load::<QueryHerbs>(&mut self.pool.get().unwrap())
-      .unwrap();
+      {
+        Ok(found_herbs) => found_herbs,
+        Err(e) => return Err(e),
+      };
 
       for QueryHerbs { id } in filtered_herbs.iter() {
         id_set.insert(*id);
       }
     }
 
-    let filtered_herbs: HerbVec = herbs
+    herbs
       .select(Herb::as_select())
       .filter(function.is_not_null())
       .filter(herb_db_id.eq_any(id_set.clone()))
       .order_by(herb_db_id.asc())
       .limit(100)
       .load::<Herb>(&mut self.pool.get().unwrap())
-      .unwrap();
-
-    Ok(filtered_herbs)
   }
 
-  // TODO update error
   pub fn get_herb_information(&self, herb_id: i32) -> Result<Vec<Herb>, diesel::result::Error> {
-    herbs.filter(herb_db_id.eq(herb_id)).load::<Herb>(&mut self.pool.get().unwrap())
+    herbs
+      .filter(herb_db_id.eq(herb_id))
+      .load::<Herb>(&mut self.pool.get().unwrap())
   }
 
-  pub fn search_herb_name_en(&self, herb_name: String, herb_language: SearchBy) -> Result<Vec<Herb>, diesel::result::Error> {
-      let fmt_herb_name = format!("%{}%", herb_name);
+  pub fn search_herb_name_en(
+    &self,
+    herb_name: String,
+    herb_language: SearchBy,
+  ) -> Result<Vec<Herb>, diesel::result::Error> {
+    let fmt_herb_name = format!("%{}%", herb_name);
 
-      match herb_language {
-        SearchBy::English => herbs.filter(tcm_name_en.ilike(fmt_herb_name)).load::<Herb>(&mut self.pool.get().unwrap()),
-        SearchBy::Chinese => herbs.filter(tcm_name.ilike(fmt_herb_name)).load::<Herb>(&mut self.pool.get().unwrap())
-      }
-      
+    match herb_language {
+      SearchBy::English => herbs
+        .filter(tcm_name_en.ilike(fmt_herb_name))
+        .load::<Herb>(&mut self.pool.get().unwrap()),
+      SearchBy::Chinese => herbs
+        .filter(tcm_name.ilike(fmt_herb_name))
+        .load::<Herb>(&mut self.pool.get().unwrap()),
+    }
   }
 }

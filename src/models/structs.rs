@@ -185,7 +185,7 @@ pub enum SearchBy {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchHerbName {
   pub language: String,
-  pub herb_name: String
+  pub herb_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
