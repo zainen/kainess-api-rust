@@ -177,6 +177,17 @@ pub struct KeywordFoundHerbs {
   pub herbs: HerbVec,
 }
 
+pub enum SearchBy {
+  English,
+  Chinese,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SearchHerbName {
+  pub language: String,
+  pub herb_name: String
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JWT {
   token: String,

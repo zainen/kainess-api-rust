@@ -6,8 +6,8 @@ use std::{collections::HashSet, fmt::Error, sync::Arc};
 use bcrypt::{hash, verify};
 
 use crate::models::{
-  schema::herbs::dsl::{function, herbs, id as herb_db_id},
-  structs::{QueryHerbs, SearchKeywords},
+  schema::herbs::dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en},
+  structs::{QueryHerbs, SearchKeywords, SearchBy},
   types::HerbVec,
 };
 use crate::models::{
@@ -338,7 +338,7 @@ impl Database {
       let filtered_herbs: Vec<QueryHerbs> = Arc::new(
         herbs
           .select(QueryHerbs::as_select())
-          .filter(function.like(&fmt))
+          .filter(function.ilike(&fmt))
           .order_by(herb_db_id.asc()),
       )
       .limit(100)
@@ -365,5 +365,15 @@ impl Database {
   // TODO update error
   pub fn get_herb_information(&self, herb_id: i32) -> Result<Vec<Herb>, diesel::result::Error> {
     herbs.filter(herb_db_id.eq(herb_id)).load::<Herb>(&mut self.pool.get().unwrap())
+  }
+
+  pub fn search_herb_name_en(&self, herb_name: String, herb_language: SearchBy) -> Result<Vec<Herb>, diesel::result::Error> {
+      let fmt_herb_name = format!("%{}%", herb_name);
+
+      match herb_language {
+        SearchBy::English => herbs.filter(tcm_name_en.ilike(fmt_herb_name)).load::<Herb>(&mut self.pool.get().unwrap()),
+        SearchBy::Chinese => herbs.filter(tcm_name.ilike(fmt_herb_name)).load::<Herb>(&mut self.pool.get().unwrap())
+      }
+      
   }
 }

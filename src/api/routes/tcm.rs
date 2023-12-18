@@ -2,7 +2,7 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 
 use crate::{
   db::database::Database,
-  models::structs::{KeywordFoundHerbs, Response, SearchKeywords},
+  models::structs::{KeywordFoundHerbs, Response, SearchKeywords, SearchHerbName}, api::routes::helper_functions::herb_string_param_to_enum,
 };
 
 #[get("/{last_id}")]
@@ -49,4 +49,28 @@ pub async fn get_herb_info(
       message: "Herb not found".to_string()
     })
   }
+}
+
+
+#[post("/search/name")]
+pub async fn search_herb_name(
+  db: web::Data<Database>,
+  search_name_params_path: web::Json<SearchHerbName>
+) -> impl Responder {
+  let SearchHerbName {language, herb_name} = search_name_params_path.into_inner();
+  let search_language =  match herb_string_param_to_enum(&language) {
+    Some(search_by) => search_by,
+    None => return HttpResponse::NotAcceptable().json(Response {
+      message: "Unsupported language".to_string()
+    })
+  };
+  let herbs = db.search_herb_name_en(herb_name, search_language);
+
+  match herbs {
+    Ok(herbs) => HttpResponse::Ok().json(herbs),
+    Err(_) => HttpResponse::BadRequest().json(Response {
+      message: "DB query failed".to_string()
+    })
+  }
+
 }
