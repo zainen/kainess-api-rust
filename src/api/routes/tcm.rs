@@ -8,6 +8,7 @@ use crate::{
 
 #[get("/{last_id}")]
 pub async fn get_from_herbs(db: web::Data<Database>, last_id: web::Path<i32>) -> impl Responder {
+  // TODO MAKE TWO END POINTS TO SEPARATE HERB LIST FROM PAGES VEC
   let last_id = last_id.into_inner();
   let herb_section = db.get_herbs(last_id);
   let pages = db.get_herb_count();

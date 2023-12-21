@@ -316,6 +316,7 @@ impl Database {
 
 // TCM DATABASE FN
 impl Database {
+  // TODO rename
   pub fn get_herb_count(&self) -> Vec<i32> {
     let herb_ids: Vec<i32> = herbs
       .select(herb_db_id)
