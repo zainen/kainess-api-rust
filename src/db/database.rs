@@ -7,8 +7,8 @@ use bcrypt::{hash, verify};
 
 use crate::models::{
   schema::herbs::dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en},
-  structs::{QueryHerbs, SearchBy, SearchKeywords},
-  types::HerbVec,
+  structs::{HerbCollectionJist, QueryHerbs, SearchBy, SearchKeywords},
+  types::{HerbVec, HerbVecJist},
 };
 use crate::models::{
   schema::recipe_step::dsl::{
@@ -316,17 +316,31 @@ impl Database {
 
 // TCM DATABASE FN
 impl Database {
+  pub fn get_herb_count(&self) -> Vec<i32> {
+    let herb_ids: Vec<i32> = herbs
+      .select(herb_db_id)
+      .filter(function.is_not_null())
+      .load::<i32>(&mut self.pool.get().unwrap()).unwrap();
+    let count = herb_ids.len();
+    let page_count = count / 10;
+    let mut page_start_ids: Vec<i32> = vec![];
+    for page in 0..=page_count {
+      page_start_ids.insert(page, herb_ids[page * 10])
+    }
+    page_start_ids
+  }
+
   // LIMIT 10 herbs per call
-  pub fn get_herbs(&self, start_from_herb_id: i32) -> Result<HerbVec, diesel::result::Error> {
+  pub fn get_herbs(&self, start_from_herb_id: i32) -> Result<HerbVecJist, diesel::result::Error> {
     Arc::new(
       herbs
-        .select(Herb::as_select())
+        .select(HerbCollectionJist::as_select())
         .filter(function.is_not_null())
         .filter(herb_db_id.gt(start_from_herb_id))
         .order_by(herb_db_id.asc())
-        .limit(100),
+        .limit(10),
     )
-    .load::<Herb>(&mut self.pool.get().unwrap())
+    .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 
   pub fn search_herbs(

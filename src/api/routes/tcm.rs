@@ -3,15 +3,16 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use crate::{
   api::routes::helper_functions::herb_string_param_to_enum,
   db::database::Database,
-  models::structs::{KeywordFoundHerbs, Response, SearchHerbName, SearchKeywords},
+  models::structs::{GetHerbs, KeywordFoundHerbs, Response, SearchHerbName, SearchKeywords},
 };
 
 #[get("/{last_id}")]
 pub async fn get_from_herbs(db: web::Data<Database>, last_id: web::Path<i32>) -> impl Responder {
   let last_id = last_id.into_inner();
   let herb_section = db.get_herbs(last_id);
+  let pages = db.get_herb_count();
   match herb_section {
-    Ok(vec) => HttpResponse::Ok().json(vec),
+    Ok(vec) => HttpResponse::Ok().json(GetHerbs { herbs: vec, pages }),
     Err(_) => HttpResponse::NotAcceptable().json(Response {
       message: "faiiled".to_string(),
     }),

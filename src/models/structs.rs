@@ -1,7 +1,7 @@
 use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
 
-use super::types::HerbVec;
+use super::types::{HerbVec, HerbVecJist};
 // use crate::db::queryable_text::TextToString;
 
 #[derive(
@@ -172,6 +172,20 @@ pub struct Herb {
   pub herb_id: Option<String>,
 }
 
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone, Identifiable)]
+#[diesel(table_name = crate::models::schema::herbs)]
+pub struct HerbCollectionJist {
+  pub id: i32,
+  pub tcm_name: Option<String>,
+  pub tcm_name_en: Option<String>,
+  pub herb_pinyin_name: Option<String>,
+  pub herb_latin_name: Option<String>,
+  pub properties: Option<String>,
+  pub meridians: Option<String>,
+  pub therapeutic_en_class: Option<String>,
+  pub therapeutic_cn_class: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KeywordFoundHerbs {
   pub herbs: HerbVec,
@@ -214,4 +228,10 @@ pub struct QueryHerbs {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SearchKeywords {
   pub keywords: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GetHerbs {
+  pub herbs: HerbVecJist,
+  pub pages: Vec<i32>,
 }
