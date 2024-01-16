@@ -188,7 +188,7 @@ pub struct HerbCollectionJist {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KeywordFoundHerbs {
-  pub herbs: HerbVec,
+  pub herbs: HerbVecJist,
 }
 
 pub enum SearchBy {
@@ -197,9 +197,9 @@ pub enum SearchBy {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SearchHerbName {
-  pub language: String,
-  pub herb_name: String,
+pub struct SearchQueryParams {
+  pub query_type: String,
+  pub params: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -227,7 +227,12 @@ pub struct QueryHerbs {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SearchKeywords {
-  pub keywords: Vec<String>,
+  pub herb_name: Vec<String>,
+  pub herb_name_cn: Vec<String>,
+  pub herb_function: Vec<String>,
+  pub herb_meridians: Vec<String>,
+  pub herb_indication: Vec<String>,
+  pub herb_properties: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

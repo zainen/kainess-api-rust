@@ -1,17 +1,20 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
 
 use crate::{
-  api::routes::helper_functions::herb_string_param_to_enum,
+  api::routes::helper_functions::validate_query_type,
   db::database::Database,
-  models::structs::{GetHerbs, KeywordFoundHerbs, Response, SearchHerbName, SearchKeywords},
+  models::structs::{GetHerbs, KeywordFoundHerbs, Response, SearchQueryParams, SearchKeywords},
 };
 
-#[get("/{last_id}")]
-pub async fn get_from_herbs(db: web::Data<Database>, last_id: web::Path<i32>) -> impl Responder {
+#[get("/{page_number}")]
+pub async fn get_from_herbs(db: web::Data<Database>, page_number: web::Path<usize>) -> impl Responder {
   // TODO MAKE TWO END POINTS TO SEPARATE HERB LIST FROM PAGES VEC
-  let last_id = last_id.into_inner();
-  let herb_section = db.get_herbs(last_id);
+  let page_number = page_number.into_inner();
   let pages = db.get_herb_count();
+
+  // TODO HANDLE POSSIBLE PAGE EXHAUSTION
+  let page_index = pages[page_number];
+  let herb_section = db.get_herbs_limit(page_index);
   match herb_section {
     Ok(vec) => HttpResponse::Ok().json(GetHerbs { herbs: vec, pages }),
     Err(_) => HttpResponse::NotAcceptable().json(Response {
@@ -54,24 +57,21 @@ pub async fn get_herb_info(
   }
 }
 
-#[post("/search/name")]
-pub async fn search_herb_name(
+#[post("/search/query")]
+pub async fn search_herbs_temp(
   db: web::Data<Database>,
-  search_name_params_path: web::Json<SearchHerbName>,
+  search_name_params_path: web::Json<SearchQueryParams>,
 ) -> impl Responder {
-  let SearchHerbName {
-    language,
-    herb_name,
+  let SearchQueryParams {
+    query_type,
+    params,
   } = search_name_params_path.into_inner();
-  let search_language = match herb_string_param_to_enum(&language) {
-    Some(search_by) => search_by,
-    None => {
-      return HttpResponse::NotAcceptable().json(Response {
-        message: "Unsupported language".to_string(),
-      })
-    }
-  };
-  let herbs = db.search_herb_name_en(herb_name, search_language);
+  if let None = validate_query_type(&query_type) {
+    return HttpResponse::NotAcceptable().json(Response {
+      message: "Unsupported language".to_string(),
+    })
+  }
+  let herbs = db.search_herbs_with_params(params);
 
   match herbs {
     Ok(herbs) => HttpResponse::Ok().json(herbs),

@@ -1,14 +1,15 @@
-use diesel::prelude::*;
+use diesel::{prelude::*, ExpressionMethods, dsl::any};
 use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
-use std::{collections::HashSet, fmt::Error, sync::Arc};
+use core::num;
+use std::{fmt::Error, sync::Arc};
 
 use bcrypt::{hash, verify};
 
 use crate::models::{
-  schema::herbs::dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en},
-  structs::{HerbCollectionJist, QueryHerbs, SearchBy, SearchKeywords},
-  types::{HerbVec, HerbVecJist},
+  schema::herbs::{dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en}, meridians, indication, properties},
+  structs::{HerbCollectionJist, SearchKeywords},
+  types::HerbVecJist,
 };
 use crate::models::{
   schema::recipe_step::dsl::{
@@ -314,6 +315,7 @@ impl Database {
   }
 }
 
+const PAGE_LIMIT: i32 = 30;
 // TCM DATABASE FN
 impl Database {
   // TODO rename
@@ -322,24 +324,21 @@ impl Database {
       .select(herb_db_id)
       .filter(function.is_not_null())
       .load::<i32>(&mut self.pool.get().unwrap()).unwrap();
-    let count = herb_ids.len();
-    let page_count = count / 10;
-    let mut page_start_ids: Vec<i32> = vec![];
-    for page in 0..=page_count {
-      page_start_ids.insert(page, herb_ids[page * 10])
-    }
-    page_start_ids
+
+    let page_count = ((herb_ids.len() / PAGE_LIMIT as usize) as f32).floor() as i32;
+
+    (0..=page_count).into_iter().map(|x| herb_ids[(x * PAGE_LIMIT) as usize]).collect()
   }
 
   // LIMIT 10 herbs per call
-  pub fn get_herbs(&self, start_from_herb_id: i32) -> Result<HerbVecJist, diesel::result::Error> {
+  pub fn get_herbs_limit(&self, start_from_herb_id: i32) -> Result<HerbVecJist, diesel::result::Error> {
     Arc::new(
       herbs
         .select(HerbCollectionJist::as_select())
         .filter(function.is_not_null())
-        .filter(herb_db_id.gt(start_from_herb_id))
+        .filter(herb_db_id.ge(start_from_herb_id))
         .order_by(herb_db_id.asc())
-        .limit(10),
+        .limit(PAGE_LIMIT as i64),
     )
     .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
@@ -347,38 +346,34 @@ impl Database {
   pub fn search_herbs(
     &self,
     search_params: SearchKeywords,
-  ) -> Result<HerbVec, diesel::result::Error> {
-    let iterator = search_params.keywords.iter();
+  ) -> Result<HerbVecJist, diesel::result::Error> {
+    // let name_formatted = &search_params.name.into_iter().map(|keyword| format!("%{}%", keyword)).collect::<Vec<String>>();
+    let SearchKeywords {
+      herb_name,
+      herb_name_cn,
+      herb_function,
+      herb_meridians,
+      herb_indication,
+      herb_properties
+    } = search_params;
 
-    // get all unique keys with function related to key words
-    let mut id_set: HashSet<i32> = HashSet::new();
-    for iter in iterator {
-      let fmt = format!("%{}%", iter);
-      let filtered_herbs: Vec<QueryHerbs> = match Arc::new(
-        herbs
-          .select(QueryHerbs::as_select())
-          .filter(function.ilike(&fmt))
-          .order_by(herb_db_id.asc()),
-      )
-      .limit(100)
-      .load::<QueryHerbs>(&mut self.pool.get().unwrap())
-      {
-        Ok(found_herbs) => found_herbs,
-        Err(e) => return Err(e),
-      };
+    let herb_name_fmt = herb_name.iter().map(|en_name| format!("%{}%", en_name)).collect::<Vec<String>>();
+    let herb_name_cn_fmt = herb_name_cn.iter().map(|cn_name| format!("%{}%", cn_name)).collect::<Vec<String>>();
+    let herb_function_fmt = herb_function.iter().map(|func| format!("%{}%", func)).collect::<Vec<String>>();
+    let herb_meridians_fmt = herb_meridians.iter().map(|merid| format!("%{}%", merid)).collect::<Vec<String>>();
+    let herb_indication_fmt = herb_indication.iter().map(|ind| format!("%{}%", ind)).collect::<Vec<String>>();
+    let herb_properties_fmt = herb_properties.iter().map(|property| format!("%{}%", property)).collect::<Vec<String>>();
 
-      for QueryHerbs { id } in filtered_herbs.iter() {
-        id_set.insert(*id);
-      }
-    }
-
+    // TODO KEEP AN EYE ON DIESEL DOCS FOR REPLACEMENTS FOR THE DEPRECATED any CURRENTLY THE ONLY SOLUTION TO THIS USE CASE
     herbs
-      .select(Herb::as_select())
-      .filter(function.is_not_null())
-      .filter(herb_db_id.eq_any(id_set.clone()))
-      .order_by(herb_db_id.asc())
-      .limit(100)
-      .load::<Herb>(&mut self.pool.get().unwrap())
+      .select(HerbCollectionJist::as_select())
+      .filter(tcm_name_en.ilike(any(herb_name_fmt)))
+      .or_filter(tcm_name.ilike(any(herb_name_cn_fmt)))
+      .filter(function.ilike(any(herb_function_fmt)).is_not_null())
+      .filter(meridians.ilike(any(herb_meridians_fmt)))
+      .filter(indication.ilike(any(herb_indication_fmt)))
+      .filter(properties.ilike(any(herb_properties_fmt)))
+      .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 
   pub fn get_herb_information(&self, herb_id: i32) -> Result<Vec<Herb>, diesel::result::Error> {
@@ -387,20 +382,14 @@ impl Database {
       .load::<Herb>(&mut self.pool.get().unwrap())
   }
 
-  pub fn search_herb_name_en(
+  pub fn search_herbs_with_params(
     &self,
-    herb_name: String,
-    herb_language: SearchBy,
+    search_params: String,
   ) -> Result<Vec<Herb>, diesel::result::Error> {
-    let fmt_herb_name = format!("%{}%", herb_name);
+    let fmt_search_params = format!("%{}%", search_params);
 
-    match herb_language {
-      SearchBy::English => herbs
-        .filter(tcm_name_en.ilike(fmt_herb_name))
-        .load::<Herb>(&mut self.pool.get().unwrap()),
-      SearchBy::Chinese => herbs
-        .filter(tcm_name.ilike(fmt_herb_name))
-        .load::<Herb>(&mut self.pool.get().unwrap()),
-    }
+    herbs
+      .filter(tcm_name_en.ilike(&fmt_search_params).or(tcm_name.ilike(&fmt_search_params)))
+      .load::<Herb>(&mut self.pool.get().unwrap())
   }
 }
