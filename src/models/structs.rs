@@ -1,8 +1,7 @@
 use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
 
-use super::types::{HerbVec, HerbVecJist};
-// use crate::db::queryable_text::TextToString;
+use super::types::HerbVecJist;
 
 #[derive(
   PartialEq, Serialize, Deserialize, Identifiable, Debug, Clone, Queryable, Selectable, AsChangeset,
@@ -170,6 +169,13 @@ pub struct Herb {
   pub symmap_id: Option<i32>,
   pub tcmsp_id: Option<i32>,
   pub herb_id: Option<String>,
+}
+
+#[derive(Queryable, Serialize, Deserialize, Debug, Clone, Selectable, Identifiable)]
+#[diesel(table_name = crate::models::schema::herbs)]
+pub struct Temp {
+  pub id: i32,
+  pub meridians: Option<String>,
 }
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone, Identifiable)]

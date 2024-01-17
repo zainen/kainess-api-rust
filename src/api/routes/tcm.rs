@@ -13,6 +13,8 @@ pub async fn get_from_herbs(db: web::Data<Database>, page_number: web::Path<usiz
   let page_number = page_number.into_inner();
   let pages = db.get_herb_count();
   
+  // println!("{:?}", db.unique_meridians().unwrap());
+
   match pages.len() < page_number || page_number < 1 {
     true => {
       return HttpResponse::NotAcceptable().json(Response {
@@ -38,13 +40,13 @@ pub async fn get_from_herbs(db: web::Data<Database>, page_number: web::Path<usiz
 }
 
 #[post("/")]
-pub async fn search_herbs(
+pub async fn search_herbs_keywords(
   db: web::Data<Database>,
   keywords_json: web::Json<SearchKeywords>,
 ) -> impl Responder {
   let keywords = keywords_json.into_inner();
 
-  let results = db.search_herbs(keywords);
+  let results = db.search_herbs_keywords(keywords);
 
   match results {
     Ok(values) => HttpResponse::Ok().json(KeywordFoundHerbs { herbs: values }),

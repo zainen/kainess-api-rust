@@ -1,13 +1,13 @@
 use diesel::{prelude::*, ExpressionMethods, dsl::any};
 use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
-use std::{fmt::Error, sync::Arc};
+use std::{fmt::Error, sync::Arc, collections::HashSet};
 
 use bcrypt::{hash, verify};
 
 use crate::models::{
   schema::herbs::{dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en}, meridians, indication, properties},
-  structs::{HerbCollectionJist, SearchKeywords},
+  structs::{HerbCollectionJist, SearchKeywords, Temp},
   types::HerbVecJist,
 };
 use crate::models::{
@@ -350,11 +350,13 @@ impl Database {
     .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 
-  pub fn search_herbs(
+  pub fn search_herbs_keywords(
     &self,
     search_params: SearchKeywords,
   ) -> Result<HerbVecJist, diesel::result::Error> {
-    // let name_formatted = &search_params.name.into_iter().map(|keyword| format!("%{}%", keyword)).collect::<Vec<String>>();
+    let query = herbs.select(meridians).distinct();
+    println!("HERE: {:?}", query);
+
     let SearchKeywords {
       herb_name,
       herb_name_cn,
@@ -398,5 +400,27 @@ impl Database {
     herbs
       .filter(tcm_name_en.ilike(&fmt_search_params).or(tcm_name.ilike(&fmt_search_params)))
       .load::<Herb>(&mut self.pool.get().unwrap())
+  }
+
+  pub fn unique_meridians(
+    &self,
+  ) -> Result<HashSet<String>, diesel::result::Error> {
+    let query: Result<Vec<Temp>, diesel::result::Error> = herbs.select(Temp::as_select()).distinct_on(meridians).filter(meridians.is_not_null()).load::<Temp>(&mut self.pool.get().unwrap());
+    match query {
+      Ok(query) => {
+        let mut set: HashSet<String> = HashSet::new();
+        for temp_item in query.iter() {
+          let temp_dirty_meridians = &temp_item.meridians;
+          if let Some(dirty_merids) = temp_dirty_meridians {
+            let clean_group = dirty_merids.trim().split(";");
+            for clean_merid in clean_group {
+              set.insert(clean_merid.to_string().trim().to_ascii_lowercase().to_string());
+            }
+          }
+        }
+        Ok(set)
+      },
+      Err(e) => Err(e)
+    }
   }
 }

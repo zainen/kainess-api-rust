@@ -7,7 +7,7 @@ use super::routes::{
     get_recipe_details, get_recipes, update_recipe_base, update_recipe_ingredient,
     update_recipe_step,
   },
-  tcm::{get_from_herbs, get_herb_info, search_herbs_temp, search_herbs},
+  tcm::{get_from_herbs, get_herb_info, search_herbs_temp, search_herbs_keywords},
   user::{create_user, login, test},
 };
 
@@ -36,7 +36,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     .service(
       web::scope("/tcm")
         .service(get_from_herbs)
-        .service(search_herbs)
+        .service(search_herbs_keywords)
         .service(get_herb_info)
         .service(search_herbs_temp),
     );
