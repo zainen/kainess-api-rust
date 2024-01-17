@@ -1,7 +1,6 @@
 use diesel::{prelude::*, ExpressionMethods, dsl::any};
 use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
-use core::num;
 use std::{fmt::Error, sync::Arc};
 
 use bcrypt::{hash, verify};
@@ -42,6 +41,15 @@ use crate::{
     structs::UserValidationParams,
   },
 };
+
+mod sql_helper {
+  macro_rules! str_partial_eq {
+      ($str:expr ) => {
+          format!("%{}%", $str)
+      };
+  }
+  pub(crate) use str_partial_eq;
+}
 
 type DBPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -337,7 +345,6 @@ impl Database {
         .select(HerbCollectionJist::as_select())
         .filter(function.is_not_null())
         .filter(herb_db_id.ge(start_from_herb_id))
-        .order_by(herb_db_id.asc())
         .limit(PAGE_LIMIT as i64),
     )
     .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
@@ -357,12 +364,12 @@ impl Database {
       herb_properties
     } = search_params;
 
-    let herb_name_fmt = herb_name.iter().map(|en_name| format!("%{}%", en_name)).collect::<Vec<String>>();
-    let herb_name_cn_fmt = herb_name_cn.iter().map(|cn_name| format!("%{}%", cn_name)).collect::<Vec<String>>();
-    let herb_function_fmt = herb_function.iter().map(|func| format!("%{}%", func)).collect::<Vec<String>>();
-    let herb_meridians_fmt = herb_meridians.iter().map(|merid| format!("%{}%", merid)).collect::<Vec<String>>();
-    let herb_indication_fmt = herb_indication.iter().map(|ind| format!("%{}%", ind)).collect::<Vec<String>>();
-    let herb_properties_fmt = herb_properties.iter().map(|property| format!("%{}%", property)).collect::<Vec<String>>();
+    let herb_name_fmt = herb_name.iter().map(|en_name| sql_helper::str_partial_eq!(en_name)).collect::<Vec<String>>();
+    let herb_name_cn_fmt = herb_name_cn.iter().map(|cn_name| sql_helper::str_partial_eq!(cn_name)).collect::<Vec<String>>();
+    let herb_function_fmt = herb_function.iter().map(|func| sql_helper::str_partial_eq!(func)).collect::<Vec<String>>();
+    let herb_meridians_fmt = herb_meridians.iter().map(|merid| sql_helper::str_partial_eq!(merid)).collect::<Vec<String>>();
+    let herb_indication_fmt = herb_indication.iter().map(|ind| sql_helper::str_partial_eq!(ind)).collect::<Vec<String>>();
+    let herb_properties_fmt = herb_properties.iter().map(|property| sql_helper::str_partial_eq!(property)).collect::<Vec<String>>();
 
     // TODO KEEP AN EYE ON DIESEL DOCS FOR REPLACEMENTS FOR THE DEPRECATED any CURRENTLY THE ONLY SOLUTION TO THIS USE CASE
     herbs

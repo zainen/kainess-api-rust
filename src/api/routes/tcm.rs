@@ -6,14 +6,28 @@ use crate::{
   models::structs::{GetHerbs, KeywordFoundHerbs, Response, SearchQueryParams, SearchKeywords},
 };
 
+// STARTING FROM PAGE 1 CHANGE TO INDEX 0
 #[get("/{page_number}")]
 pub async fn get_from_herbs(db: web::Data<Database>, page_number: web::Path<usize>) -> impl Responder {
   // TODO MAKE TWO END POINTS TO SEPARATE HERB LIST FROM PAGES VEC
   let page_number = page_number.into_inner();
   let pages = db.get_herb_count();
+  
+  match pages.len() < page_number || page_number < 1 {
+    true => {
+      return HttpResponse::NotAcceptable().json(Response {
+      message: "faiiled".to_string(),
+      })
+    },
+    false => {}
+  };
+
+
+  let page_number_to_index = page_number - 1;
+
 
   // TODO HANDLE POSSIBLE PAGE EXHAUSTION
-  let page_index = pages[page_number];
+  let page_index = pages[page_number_to_index];
   let herb_section = db.get_herbs_limit(page_index);
   match herb_section {
     Ok(vec) => HttpResponse::Ok().json(GetHerbs { herbs: vec, pages }),
