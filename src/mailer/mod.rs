@@ -1,2 +1,2 @@
-pub mod helper_functions;
+pub mod mailer;
 pub mod structs;

@@ -1,14 +1,16 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
 use dotenv::dotenv;
-use lettre::{transport::smtp::authentication::Credentials, SmtpTransport, Transport};
+use lettre::{
+  message::header::ContentType, transport::smtp::authentication::Credentials, SmtpTransport,
+  Transport,
+};
 
 use crate::{
   db::database::Database,
   mailer::{
-    helper_functions::create_message,
+    mailer::Mailer,
     structs::{EmailReqs, EmailSendResult},
   },
-  tera::tera::TemplatesConsumer,
 };
 
 #[post("/")]
@@ -32,7 +34,7 @@ pub async fn handle_email(
     ),
     None => "Kainess incoming inquiry".to_string(),
   };
-  let email = create_message(&sender, &receiver, &subject, &body);
+  let email = Mailer::create_message(&sender, &receiver, &subject, body, ContentType::TEXT_PLAIN);
 
   let creds = Credentials::new(
     std::env::var("GMAIL_USER").expect("Missing email user"),
@@ -62,7 +64,27 @@ pub async fn handle_email(
 
 #[get("/")]
 pub async fn try_template() -> impl Responder {
-  let consumer = TemplatesConsumer::new();
-  println!("{:?}", consumer);
-  HttpResponse::Ok()
+  let context = tera::Context::new();
+  let mut mailer = Mailer::new();
+  let rendered = &mailer.render_template("index.html", &context);
+  let message = Mailer::create_message(
+    "zainen.test@gmail.com",
+    "zainen.test@gmail.com",
+    "Hello",
+    rendered.to_string(),
+    ContentType::TEXT_HTML,
+  );
+  match Mailer::send(message) {
+    Ok(_) => HttpResponse::Ok().json(EmailSendResult {
+      success: true,
+      message: "Email sent".to_string(),
+    }),
+    Err(e) => {
+      println!("{:?}", e);
+      HttpResponse::NotAcceptable().json(EmailSendResult {
+        success: false,
+        message: "Failed to send".to_string(),
+      })
+    }
+  }
 }

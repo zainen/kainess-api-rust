@@ -6,7 +6,6 @@ mod api;
 mod db;
 mod mailer;
 mod models;
-mod tera;
 
 #[get("/health")]
 async fn healthcheck() -> impl Responder {
@@ -26,6 +25,7 @@ async fn not_found() -> Result<HttpResponse> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
   let db = db::database::Database::new();
+  // LUL should probably re-name
   let app_data = web::Data::new(db);
 
   HttpServer::new(move || {
