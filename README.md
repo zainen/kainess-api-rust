@@ -13,8 +13,7 @@ Recipe database with lists and displaying
 Traditional Chinese medicine Database with multiple herbs some without helpful data
 TODO work on connection to recipes with health benefits
 ### User
-Ownership of personal added recipes and favourited recipes
-favourites herbs
+Ownership of personally added recipes and favourited recipes herbs
 etc.
 
 
