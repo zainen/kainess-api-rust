@@ -19,6 +19,7 @@ impl Mailer {
     Mailer { tera }
   }
 
+  // TODO handle templates and possible needed context constraints if ideal
   pub fn render_template(&mut self, template: &str, context: &Context) -> String {
     self.tera.render(template, context).unwrap()
   }
