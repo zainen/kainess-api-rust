@@ -67,14 +67,14 @@ pub async fn try_template() -> impl Responder {
   let context = tera::Context::new();
   let mut mailer = Mailer::new();
   let rendered = &mailer.render_template("index.html", &context);
-  let message = Mailer::create_message(
+  let message = mailer.create_message(
     "zainen.test@gmail.com",
     "zainen.test@gmail.com",
     "Hello",
     rendered.to_string(),
     ContentType::TEXT_HTML,
   );
-  match Mailer::send(message) {
+  match mailer.send(message) {
     Ok(_) => HttpResponse::Ok().json(EmailSendResult {
       success: true,
       message: "Email sent".to_string(),

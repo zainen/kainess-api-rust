@@ -24,6 +24,7 @@ impl Mailer {
   }
 
   pub fn create_message(
+    &self,
     sender: &str,
     reciever: &str,
     subject: &str,
@@ -40,7 +41,7 @@ impl Mailer {
       .unwrap()
   }
 
-  pub fn send(message: Message) -> Result<Response, Error> {
+  pub fn send(&self, message: Message) -> Result<Response, Error> {
     let creds = Credentials::new(
       std::env::var("GMAIL_USER").expect("Missing email user"),
       std::env::var("GMAIL_PASS").expect("Missing email user password"),
