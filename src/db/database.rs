@@ -1,12 +1,16 @@
-use diesel::{prelude::*, ExpressionMethods, dsl::any};
 use diesel::r2d2::{self, ConnectionManager};
+#[allow(deprecated)]
+use diesel::{dsl::any, prelude::*, ExpressionMethods};
 use dotenv::dotenv;
-use std::{fmt::Error, sync::Arc, collections::HashSet};
+use std::{collections::HashSet, fmt::Error, sync::Arc};
 
 use bcrypt::{hash, verify};
 
 use crate::models::{
-  schema::herbs::{dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en}, meridians, indication, properties},
+  schema::herbs::{
+    dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en},
+    indication, meridians, properties,
+  },
   structs::{HerbCollectionJist, SearchKeywords, Temp},
   types::HerbVecJist,
 };
@@ -44,9 +48,9 @@ use crate::{
 
 mod sql_helper {
   macro_rules! str_partial_eq {
-      ($str:expr ) => {
-          format!("%{}%", $str)
-      };
+    ($str:expr ) => {
+      format!("%{}%", $str)
+    };
   }
   pub(crate) use str_partial_eq;
 }
@@ -331,15 +335,22 @@ impl Database {
     let herb_ids: Vec<i32> = herbs
       .select(herb_db_id)
       .filter(function.is_not_null())
-      .load::<i32>(&mut self.pool.get().unwrap()).unwrap();
+      .load::<i32>(&mut self.pool.get().unwrap())
+      .unwrap();
 
     let page_count = ((herb_ids.len() / PAGE_LIMIT as usize) as f32).floor() as i32;
 
-    (0..=page_count).into_iter().map(|x| herb_ids[(x * PAGE_LIMIT) as usize]).collect()
+    (0..=page_count)
+      .into_iter()
+      .map(|x| herb_ids[(x * PAGE_LIMIT) as usize])
+      .collect()
   }
 
   // LIMIT 10 herbs per call
-  pub fn get_herbs_limit(&self, start_from_herb_id: i32) -> Result<HerbVecJist, diesel::result::Error> {
+  pub fn get_herbs_limit(
+    &self,
+    start_from_herb_id: i32,
+  ) -> Result<HerbVecJist, diesel::result::Error> {
     Arc::new(
       herbs
         .select(HerbCollectionJist::as_select())
@@ -363,17 +374,36 @@ impl Database {
       herb_function,
       herb_meridians,
       herb_indication,
-      herb_properties
+      herb_properties,
     } = search_params;
 
-    let herb_name_fmt = herb_name.iter().map(|en_name| sql_helper::str_partial_eq!(en_name)).collect::<Vec<String>>();
-    let herb_name_cn_fmt = herb_name_cn.iter().map(|cn_name| sql_helper::str_partial_eq!(cn_name)).collect::<Vec<String>>();
-    let herb_function_fmt = herb_function.iter().map(|func| sql_helper::str_partial_eq!(func)).collect::<Vec<String>>();
-    let herb_meridians_fmt = herb_meridians.iter().map(|merid| sql_helper::str_partial_eq!(merid)).collect::<Vec<String>>();
-    let herb_indication_fmt = herb_indication.iter().map(|ind| sql_helper::str_partial_eq!(ind)).collect::<Vec<String>>();
-    let herb_properties_fmt = herb_properties.iter().map(|property| sql_helper::str_partial_eq!(property)).collect::<Vec<String>>();
+    let herb_name_fmt = herb_name
+      .iter()
+      .map(|en_name| sql_helper::str_partial_eq!(en_name))
+      .collect::<Vec<String>>();
+    let herb_name_cn_fmt = herb_name_cn
+      .iter()
+      .map(|cn_name| sql_helper::str_partial_eq!(cn_name))
+      .collect::<Vec<String>>();
+    let herb_function_fmt = herb_function
+      .iter()
+      .map(|func| sql_helper::str_partial_eq!(func))
+      .collect::<Vec<String>>();
+    let herb_meridians_fmt = herb_meridians
+      .iter()
+      .map(|merid| sql_helper::str_partial_eq!(merid))
+      .collect::<Vec<String>>();
+    let herb_indication_fmt = herb_indication
+      .iter()
+      .map(|ind| sql_helper::str_partial_eq!(ind))
+      .collect::<Vec<String>>();
+    let herb_properties_fmt = herb_properties
+      .iter()
+      .map(|property| sql_helper::str_partial_eq!(property))
+      .collect::<Vec<String>>();
 
     // TODO KEEP AN EYE ON DIESEL DOCS FOR REPLACEMENTS FOR THE DEPRECATED any CURRENTLY THE ONLY SOLUTION TO THIS USE CASE
+    #[allow(deprecated)]
     herbs
       .select(HerbCollectionJist::as_select())
       .filter(tcm_name_en.ilike(any(herb_name_fmt)))
@@ -391,21 +421,13 @@ impl Database {
       .load::<Herb>(&mut self.pool.get().unwrap())
   }
 
-  pub fn search_herbs_with_params(
-    &self,
-    search_params: String,
-  ) -> Result<Vec<Herb>, diesel::result::Error> {
-    let fmt_search_params = format!("%{}%", search_params);
+  pub fn unique_meridians(&self) -> Result<Vec<String>, diesel::result::Error> {
+    let query: Result<Vec<Temp>, diesel::result::Error> = herbs
+      .select(Temp::as_select())
+      .distinct_on(meridians)
+      .filter(meridians.is_not_null())
+      .load::<Temp>(&mut self.pool.get().unwrap());
 
-    herbs
-      .filter(tcm_name_en.ilike(&fmt_search_params).or(tcm_name.ilike(&fmt_search_params)))
-      .load::<Herb>(&mut self.pool.get().unwrap())
-  }
-
-  pub fn unique_meridians(
-    &self,
-  ) -> Result<HashSet<String>, diesel::result::Error> {
-    let query: Result<Vec<Temp>, diesel::result::Error> = herbs.select(Temp::as_select()).distinct_on(meridians).filter(meridians.is_not_null()).load::<Temp>(&mut self.pool.get().unwrap());
     match query {
       Ok(query) => {
         let mut set: HashSet<String> = HashSet::new();
@@ -414,13 +436,22 @@ impl Database {
           if let Some(dirty_merids) = temp_dirty_meridians {
             let clean_group = dirty_merids.trim().split(";");
             for clean_merid in clean_group {
-              set.insert(clean_merid.to_string().trim().to_ascii_lowercase().to_string());
+              set.insert(
+                clean_merid
+                  .to_string()
+                  .trim()
+                  .to_ascii_lowercase()
+                  .to_string(),
+              );
             }
           }
         }
-        Ok(set)
-      },
-      Err(e) => Err(e)
+        // needed for constant order
+        let mut unique_meridians = Vec::from_iter(set);
+        unique_meridians.sort();
+        Ok(unique_meridians)
+      }
+      Err(e) => Err(e),
     }
   }
 }

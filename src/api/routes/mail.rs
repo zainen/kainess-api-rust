@@ -1,7 +1,6 @@
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use dotenv::dotenv;
-use lettre::transport::smtp::authentication::Credentials;
-use lettre::{SmtpTransport, Transport};
+use lettre::{transport::smtp::authentication::Credentials, SmtpTransport, Transport};
 
 use crate::{
   db::database::Database,
@@ -9,6 +8,7 @@ use crate::{
     helper_functions::create_message,
     structs::{EmailReqs, EmailSendResult},
   },
+  tera::tera::TemplatesConsumer,
 };
 
 #[post("/")]
@@ -26,9 +26,9 @@ pub async fn handle_email(
     body,
   } = params_json.into_inner();
   let subject = match phone_number {
-    Some(pn) => format!(
+    Some(phone_number) => format!(
       "Kainess incoming inquiry from {} {} with phone number {}",
-      first_name, last_name, pn
+      first_name, last_name, phone_number
     ),
     None => "Kainess incoming inquiry".to_string(),
   };
@@ -44,7 +44,6 @@ pub async fn handle_email(
     .unwrap()
     .credentials(creds)
     .build();
-
   // Send the email
   match mailer.send(&email) {
     Ok(_) => HttpResponse::Ok().json(EmailSendResult {
@@ -59,4 +58,11 @@ pub async fn handle_email(
       })
     }
   }
+}
+
+#[get("/")]
+pub async fn try_template() -> impl Responder {
+  let consumer = TemplatesConsumer::new();
+  println!("{:?}", consumer);
+  HttpResponse::Ok()
 }

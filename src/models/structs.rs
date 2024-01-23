@@ -197,17 +197,6 @@ pub struct KeywordFoundHerbs {
   pub herbs: HerbVecJist,
 }
 
-pub enum SearchBy {
-  English,
-  Chinese,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SearchQueryParams {
-  pub query_type: String,
-  pub params: String,
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JWT {
   token: String,
@@ -245,4 +234,9 @@ pub struct SearchKeywords {
 pub struct GetHerbs {
   pub herbs: HerbVecJist,
   pub pages: Vec<i32>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ResponseMeridians {
+  pub meridians: Vec<String>,
 }

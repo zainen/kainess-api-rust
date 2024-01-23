@@ -6,6 +6,7 @@ mod api;
 mod db;
 mod mailer;
 mod models;
+mod tera;
 
 #[get("/health")]
 async fn healthcheck() -> impl Responder {

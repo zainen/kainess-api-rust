@@ -1,0 +1,6 @@
+Hello {{ name }},
+
+It's great to have you! Let's start our journey of health together.
+
+To better health and living with Kainess,
+T

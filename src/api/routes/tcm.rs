@@ -1,34 +1,31 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, web, HttpResponse, Responder};
 
 use crate::{
-  api::routes::helper_functions::validate_query_type,
   db::database::Database,
-  models::structs::{GetHerbs, KeywordFoundHerbs, Response, SearchQueryParams, SearchKeywords},
+  models::structs::{GetHerbs, KeywordFoundHerbs, Response, ResponseMeridians, SearchKeywords},
 };
 
 // STARTING FROM PAGE 1 CHANGE TO INDEX 0
 #[get("/{page_number}")]
-pub async fn get_from_herbs(db: web::Data<Database>, page_number: web::Path<usize>) -> impl Responder {
+pub async fn get_from_herbs(
+  db: web::Data<Database>,
+  page_number: web::Path<usize>,
+) -> impl Responder {
   // TODO MAKE TWO END POINTS TO SEPARATE HERB LIST FROM PAGES VEC
   let page_number = page_number.into_inner();
   let pages = db.get_herb_count();
-  
-  // println!("{:?}", db.unique_meridians().unwrap());
 
   match pages.len() < page_number || page_number < 1 {
     true => {
       return HttpResponse::NotAcceptable().json(Response {
-      message: "faiiled".to_string(),
+        message: "faiiled".to_string(),
       })
-    },
+    }
     false => {}
   };
 
-
   let page_number_to_index = page_number - 1;
 
-
-  // TODO HANDLE POSSIBLE PAGE EXHAUSTION
   let page_index = pages[page_number_to_index];
   let herb_section = db.get_herbs_limit(page_index);
   match herb_section {
@@ -39,7 +36,7 @@ pub async fn get_from_herbs(db: web::Data<Database>, page_number: web::Path<usiz
   }
 }
 
-#[post("/")]
+#[get("/search/keywords-filter")]
 pub async fn search_herbs_keywords(
   db: web::Data<Database>,
   keywords_json: web::Json<SearchKeywords>,
@@ -56,7 +53,7 @@ pub async fn search_herbs_keywords(
   }
 }
 
-#[get("/search/{herb_id_path}")]
+#[get("/herbs/{herb_id_path}")]
 pub async fn get_herb_info(
   db: web::Data<Database>,
   herb_id_path: web::Path<i32>,
@@ -73,26 +70,11 @@ pub async fn get_herb_info(
   }
 }
 
-#[post("/search/query")]
-pub async fn search_herbs_temp(
-  db: web::Data<Database>,
-  search_name_params_path: web::Json<SearchQueryParams>,
-) -> impl Responder {
-  let SearchQueryParams {
-    query_type,
-    params,
-  } = search_name_params_path.into_inner();
-  if let None = validate_query_type(&query_type) {
-    return HttpResponse::NotAcceptable().json(Response {
-      message: "Unsupported language".to_string(),
-    })
-  }
-  let herbs = db.search_herbs_with_params(params);
+#[get("/search/meridians")]
+pub async fn get_meridian_options(db: web::Data<Database>) -> impl Responder {
+  let unique_meridians = db.unique_meridians().expect("DB meridians Query Failed");
 
-  match herbs {
-    Ok(herbs) => HttpResponse::Ok().json(herbs),
-    Err(_) => HttpResponse::BadRequest().json(Response {
-      message: "DB query failed".to_string(),
-    }),
-  }
+  HttpResponse::Ok().json(ResponseMeridians {
+    meridians: unique_meridians,
+  })
 }

@@ -1,13 +1,13 @@
 use actix_web::web;
 
 use super::routes::{
-  mail::handle_email,
+  mail::{handle_email, try_template},
   recipe::{
     add_recipe_step, create_recipe, delete_recipe, delete_recipe_ingredient, delete_recipe_step,
     get_recipe_details, get_recipes, update_recipe_base, update_recipe_ingredient,
     update_recipe_step,
   },
-  tcm::{get_from_herbs, get_herb_info, search_herbs_temp, search_herbs_keywords},
+  tcm::{get_from_herbs, get_herb_info, get_meridian_options, search_herbs_keywords},
   user::{create_user, login, test},
 };
 
@@ -26,7 +26,11 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(delete_recipe_ingredient)
         .service(delete_recipe_step),
     )
-    .service(web::scope("/send-email").service(handle_email))
+    .service(
+      web::scope("/send-email")
+        .service(handle_email)
+        .service(try_template),
+    )
     .service(
       web::scope("/user")
         .service(login)
@@ -38,6 +42,6 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(get_from_herbs)
         .service(search_herbs_keywords)
         .service(get_herb_info)
-        .service(search_herbs_temp),
+        .service(get_meridian_options),
     );
 }

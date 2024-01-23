@@ -1,4 +1,5 @@
 use lettre::{message::header::ContentType, Message};
+use tera::Context;
 
 pub fn create_message(sender: &str, reciever: &str, subject: &str, body: &str) -> Message {
   let email = Message::builder()
@@ -11,4 +12,9 @@ pub fn create_message(sender: &str, reciever: &str, subject: &str, body: &str) -
     .unwrap();
 
   email
+}
+
+pub fn populate_greeting_template(name: &str) {
+  let mut context = Context::new();
+  context.insert("name", name);
 }
