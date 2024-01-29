@@ -248,7 +248,6 @@ impl Database {
     &self,
     user: UserValidationParams,
   ) -> Result<UserJwtInfo, diesel::result::Error> {
-    println!("starting db insert");
     dotenv().ok();
     let hash = hash(user.password, 14).expect("FAILED TO HASH");
     let UserValidationParams {
@@ -365,9 +364,8 @@ impl Database {
     &self,
     search_params: SearchKeywords,
   ) -> Result<HerbVecJist, diesel::result::Error> {
-    let query = herbs.select(meridians).distinct();
-    println!("HERE: {:?}", query);
 
+    // dont care if jumk meridians are added since check is for any that possibly match not equal all
     let SearchKeywords {
       herb_name,
       herb_name_cn,
@@ -381,22 +379,27 @@ impl Database {
       .iter()
       .map(|en_name| sql_helper::str_partial_eq!(en_name))
       .collect::<Vec<String>>();
+
     let herb_name_cn_fmt = herb_name_cn
       .iter()
       .map(|cn_name| sql_helper::str_partial_eq!(cn_name))
       .collect::<Vec<String>>();
+
     let herb_function_fmt = herb_function
       .iter()
       .map(|func| sql_helper::str_partial_eq!(func))
       .collect::<Vec<String>>();
+
     let herb_meridians_fmt = herb_meridians
       .iter()
       .map(|merid| sql_helper::str_partial_eq!(merid))
       .collect::<Vec<String>>();
+
     let herb_indication_fmt = herb_indication
       .iter()
       .map(|ind| sql_helper::str_partial_eq!(ind))
       .collect::<Vec<String>>();
+
     let herb_properties_fmt = herb_properties
       .iter()
       .map(|property| sql_helper::str_partial_eq!(property))

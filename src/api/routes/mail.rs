@@ -40,7 +40,7 @@ pub async fn handle_email(
       message: "Email sent".to_string(),
     }),
     Err(e) => {
-      println!("{:?}", e);
+      eprintln!("{e}");
       HttpResponse::NotAcceptable().json(EmailSendResult {
         success: false,
         message: "Failed to send".to_string(),
@@ -67,7 +67,7 @@ pub async fn try_template() -> impl Responder {
       message: "Email sent".to_string(),
     }),
     Err(e) => {
-      println!("{:?}", e);
+      eprintln!("{e}");
       HttpResponse::NotAcceptable().json(EmailSendResult {
         success: false,
         message: "Failed to send".to_string(),

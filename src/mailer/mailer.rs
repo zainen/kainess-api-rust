@@ -13,7 +13,6 @@ impl Mailer {
   pub fn new() -> Self {
     let dir = std::env::current_dir().unwrap().join("templates/**/*");
     let dir_str = dir.to_str().unwrap();
-    println!("{:?}", dir_str);
     let tera = Tera::new(dir_str).unwrap();
 
     Mailer { tera }

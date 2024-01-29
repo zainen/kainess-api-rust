@@ -15,13 +15,10 @@ pub async fn get_from_herbs(
   let page_number = page_number.into_inner();
   let pages = db.get_herb_count();
 
-  match pages.len() < page_number || page_number < 1 {
-    true => {
-      return HttpResponse::NotAcceptable().json(Response {
-        message: "faiiled".to_string(),
-      })
-    }
-    false => {}
+  if pages.len() < page_number || page_number < 1 {
+    return HttpResponse::NotAcceptable().json(Response {
+      message: "faiiled".to_string(),
+    })
   };
 
   let page_number_to_index = page_number - 1;
