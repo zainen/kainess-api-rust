@@ -50,8 +50,11 @@ pub async fn handle_email(
 }
 
 #[get("/")]
-pub async fn try_template() -> impl Responder {
-  let context = tera::Context::new();
+pub async fn try_template(
+  _db: web::Data<Database>,
+) -> impl Responder {
+  let mut context = tera::Context::new();
+  context.insert("name", "Zainen");
   let mut mailer = Mailer::new();
   let rendered = &mailer.render_template("index.html", &context);
   let message = mailer.create_message(
