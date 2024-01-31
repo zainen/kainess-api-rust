@@ -11,7 +11,7 @@ use crate::models::{
     dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en},
     indication, meridians, properties,
   },
-  structs::{HerbCollectionJist, SearchKeywords, Temp},
+  structs::{HerbCollectionJist, SearchKeywords, SearchMeridians, Temp},
   types::HerbVecJist,
 };
 use crate::models::{
@@ -360,7 +360,7 @@ impl Database {
     .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 
-  pub fn search_herbs_keywords(
+  pub fn _deprecated_search_herbs_keywords(
     &self,
     search_params: SearchKeywords,
   ) -> Result<HerbVecJist, diesel::result::Error> {
@@ -415,6 +415,31 @@ impl Database {
       .filter(meridians.ilike(any(herb_meridians_fmt)))
       .filter(indication.ilike(any(herb_indication_fmt)))
       .filter(properties.ilike(any(herb_properties_fmt)))
+      .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
+  }
+
+  pub fn search_herbs_keywords(
+    &self,
+    search_params: SearchMeridians,
+  ) -> Result<HerbVecJist, diesel::result::Error> {
+
+    // ONLY CHECK MERIDIANS since name is less clear
+    let SearchMeridians {
+      herb_meridians,
+    } = search_params;
+
+    let herb_meridians_fmt = herb_meridians
+      .iter()
+      .map(|merid| sql_helper::str_partial_eq!(merid))
+      .collect::<Vec<String>>();
+
+
+    // TODO KEEP AN EYE ON DIESEL DOCS FOR REPLACEMENTS FOR THE DEPRECATED any CURRENTLY THE ONLY SOLUTION TO THIS USE CASE
+    #[allow(deprecated)]
+    herbs
+      .select(HerbCollectionJist::as_select())
+      .filter(function.is_not_null())
+      .filter(meridians.ilike(any(herb_meridians_fmt)))
       .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 

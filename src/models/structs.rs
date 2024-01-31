@@ -230,6 +230,11 @@ pub struct SearchKeywords {
   pub herb_properties: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SearchMeridians {
+  pub herb_meridians: Vec<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetHerbs {
   pub herbs: HerbVecJist,

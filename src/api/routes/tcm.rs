@@ -2,7 +2,7 @@ use actix_web::{get, web, HttpResponse, Responder};
 
 use crate::{
   db::database::Database,
-  models::structs::{GetHerbs, KeywordFoundHerbs, Response, ResponseMeridians, SearchKeywords},
+  models::structs::{GetHerbs, KeywordFoundHerbs, Response, ResponseMeridians, SearchMeridians},
 };
 
 // STARTING FROM PAGE 1 CHANGE TO INDEX 0
@@ -36,7 +36,7 @@ pub async fn get_from_herbs(
 #[get("/search/keywords-filter")]
 pub async fn search_herbs_keywords(
   db: web::Data<Database>,
-  keywords_json: web::Json<SearchKeywords>,
+  keywords_json: web::Json<SearchMeridians>,
 ) -> impl Responder {
   let keywords = keywords_json.into_inner();
 
