@@ -33,17 +33,39 @@ pub async fn get_from_herbs(
   }
 }
 
-#[get("/search/keywords-filter")]
+#[get("/{page_number}/meridian-filter")]
 pub async fn search_herbs_keywords(
   db: web::Data<Database>,
-  keywords_json: web::Json<SearchMeridians>,
+  page_number: web::Path<usize>,
+  data: web::Query<SearchMeridians>,
 ) -> impl Responder {
-  let keywords = keywords_json.into_inner();
+  let option_meridians = data.into_inner().meridians;
+  let page_number = page_number.into_inner();
 
-  let results = db.search_herbs_keywords(keywords);
+  let meridians = match option_meridians {
+    Some(meridians) => meridians,
+    None => vec!(String::new()),
+  };
+
+  let pages = db.search_herbs_keywords_count(meridians.clone());
+
+  if pages.len() < page_number || page_number < 1 {
+    return HttpResponse::NotAcceptable().json(Response {
+      message: "faiiled".to_string(),
+    })
+  };
+
+  let page_number_to_index = page_number - 1;
+
+  let page_index = pages[page_number_to_index];
+
+  let results = db.search_herbs_keywords(page_index, meridians);
 
   match results {
-    Ok(values) => HttpResponse::Ok().json(KeywordFoundHerbs { herbs: values }),
+    Ok(values) => {
+
+      HttpResponse::Ok().json(KeywordFoundHerbs { herbs: values, pages })
+    },
     Err(_) => HttpResponse::NotAcceptable().json(Response {
       message: "failed".to_string(),
     }),

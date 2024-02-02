@@ -11,7 +11,7 @@ use crate::models::{
     dsl::{function, herbs, id as herb_db_id, tcm_name, tcm_name_en},
     indication, meridians, properties,
   },
-  structs::{HerbCollectionJist, SearchKeywords, SearchMeridians, Temp},
+  structs::{HerbCollectionJist, SearchKeywords, Temp},
   types::HerbVecJist,
 };
 use crate::models::{
@@ -360,6 +360,7 @@ impl Database {
     .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 
+#[deprecated]
   pub fn _deprecated_search_herbs_keywords(
     &self,
     search_params: SearchKeywords,
@@ -418,29 +419,63 @@ impl Database {
       .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 
-  pub fn search_herbs_keywords(
+  pub fn search_herbs_keywords_count(
     &self,
-    search_params: SearchMeridians,
-  ) -> Result<HerbVecJist, diesel::result::Error> {
+    herb_meridians: Vec<String>,
+  ) -> Vec<i32> {
 
     // ONLY CHECK MERIDIANS since name is less clear
-    let SearchMeridians {
-      herb_meridians,
-    } = search_params;
 
     let herb_meridians_fmt = herb_meridians
       .iter()
       .map(|merid| sql_helper::str_partial_eq!(merid))
       .collect::<Vec<String>>();
 
+    // TODO KEEP AN EYE ON DIESEL DOCS FOR REPLACEMENTS FOR THE DEPRECATED any CURRENTLY THE ONLY SOLUTION TO THIS USE CASE
+    let mut query = herbs
+      .select(herb_db_id)
+      .filter(function.is_not_null())
+      .filter(meridians.is_not_null())
+      .into_boxed();
+    for m in herb_meridians_fmt.iter() {
+      query = query
+        .filter(meridians.ilike(m));
+    }
+    let herb_ids = query.load::<i32>(&mut self.pool.get().unwrap()).unwrap();
+
+    let page_count = ((herb_ids.len() / PAGE_LIMIT as usize) as f32).floor() as i32;
+
+    (0..=page_count)
+      .into_iter()
+      .map(|x| herb_ids[(x * PAGE_LIMIT) as usize])
+      .collect()
+  }
+
+  pub fn search_herbs_keywords(
+    &self,
+    page_index: i32,
+    herb_meridians: Vec<String>,
+  ) -> Result<HerbVecJist, diesel::result::Error> {
+
+    // ONLY CHECK MERIDIANS since name is less clear
+
+    let herb_meridians_fmt = herb_meridians
+      .iter()
+      .map(|merid| sql_helper::str_partial_eq!(merid))
+      .collect::<Vec<String>>();
 
     // TODO KEEP AN EYE ON DIESEL DOCS FOR REPLACEMENTS FOR THE DEPRECATED any CURRENTLY THE ONLY SOLUTION TO THIS USE CASE
-    #[allow(deprecated)]
-    herbs
+    let mut query = herbs
       .select(HerbCollectionJist::as_select())
       .filter(function.is_not_null())
-      .filter(meridians.ilike(any(herb_meridians_fmt)))
-      .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
+      .filter(meridians.is_not_null())
+      .filter(herb_db_id.ge(page_index))
+      .into_boxed();
+    for m in herb_meridians_fmt.iter() {
+      query = query
+        .filter(meridians.ilike(m));
+    }
+    query.load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 
   pub fn get_herb_information(&self, herb_id: i32) -> Result<Vec<Herb>, diesel::result::Error> {

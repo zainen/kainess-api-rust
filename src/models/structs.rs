@@ -1,5 +1,6 @@
 use diesel::{prelude::Associations, AsChangeset, Identifiable, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
+use serde_with::{StringWithSeparator, formats::CommaSeparator};
 
 use super::types::HerbVecJist;
 
@@ -195,6 +196,7 @@ pub struct HerbCollectionJist {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KeywordFoundHerbs {
   pub herbs: HerbVecJist,
+  pub pages: Vec<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -230,9 +232,12 @@ pub struct SearchKeywords {
   pub herb_properties: Vec<String>,
 }
 
+#[serde_with::serde_as]
+#[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SearchMeridians {
-  pub herb_meridians: Vec<String>,
+  #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, String>>")]
+  pub meridians: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
