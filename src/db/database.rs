@@ -345,7 +345,7 @@ impl Database {
       .collect()
   }
 
-  // LIMIT 10 herbs per call
+  // LIMIT PAGE_LIMIT value herbs per call
   pub fn get_herbs_limit(
     &self,
     start_from_herb_id: i32,
@@ -475,7 +475,9 @@ impl Database {
       query = query
         .filter(meridians.ilike(m));
     }
-    query.load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
+    query
+      .limit(PAGE_LIMIT as i64)
+      .load::<HerbCollectionJist>(&mut self.pool.get().unwrap())
   }
 
   pub fn get_herb_information(&self, herb_id: i32) -> Result<Vec<Herb>, diesel::result::Error> {
